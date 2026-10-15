@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收信快樂：回憶拼圖 - 3D 互動遊戲原型</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { overflow: hidden; background-color: #f4ecd8; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        
+        /* UI HUD Overlay */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* Game Header */
+        .hud-header { position: absolute; top: 20px; left: 20px; background: rgba(255, 253, 245, 0.9); padding: 12px 20px; border-radius: 16px; border: 2px solid #8c6d53; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .hud-title { font-size: 20px; font-weight: bold; color: #5a3d28; }
+        .hud-sub { font-size: 13px; color: #8c6d53; margin-top: 2px; }
+        
+        /* Controls Prompt */
+        .controls-hint { position: absolute; bottom: 20px; left: 20px; background: rgba(0, 0, 0, 0.65); color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; backdrop-filter: blur(4px); }
+        
+        /* Interaction Prompt */
+        #interact-prompt { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: #e07a5f; color: white; padding: 10px 24px; border-radius: 25px; font-size: 16px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: none; animation: bounce 0.8s infinite alternate; }
+        @keyframes bounce { 0% { transform: translate(-50%, 0); } 100% { transform: translate(-50%, -8px); } }
+
+        /* Modal Dialogs */
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fdfbf7; border: 4px solid #8c6d53; border-radius: 20px; padding: 25px; width: 90%; max-width: 520px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); pointer-events: auto; display: none; z-index: 10; }
+        .modal-title { font-size: 22px; font-weight: bold; color: #5a3d28; border-bottom: 2px dashed #d4c3b3; padding-bottom: 10px; margin-bottom: 15px; text-align: center; }
+        .modal-body { font-size: 15px; color: #4a3b32; line-height: 1.6; max-height: 300px; overflow-y: auto; }
+        .close-btn { margin-top: 20px; width: 100%; background: #8c6d53; color: white; border: none; padding: 10px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .close-btn:hover { background: #6e543e; }
+
+        /* Writing Letter Form */
+        textarea { width: 100%; height: 120px; background: #faf4e8; border: 2px solid #c9b09a; border-radius: 10px; padding: 10px; font-size: 14px; color: #333; resize: none; margin-top: 10px; }
+        .stamp-selector { display: flex; gap: 10px; margin: 12px 0; justify-content: center; }
+        .stamp-option { border: 2px dashed #a88a73; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; background: #fff; }
+        .stamp-option.active { border: 2px solid #e07a5f; background: #fceade; font-weight: bold; color: #e07a5f; }
+    </style>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <div class="hud-header">
+            <div class="hud-title">收信快樂：回憶拼圖 ✉️</div>
+            <div class="hud-sub">麥高芬劇團 115學年度冬季公演體驗</div>
+        </div>
+
+        <div class="controls-hint">🎮 移動: <b>WASD / 方向鍵</b> | 互動: <b>E 鍵 / 靠近設施</b></div>
+        <div id="interact-prompt">按 [E] 或點擊互動</div>
+
+        <!-- 告示牌 Modal -->
+        <div id="board-modal" class="modal">
+            <div class="modal-title">🏛️ 政大傳院 & 麥高芬劇團</div>
+            <div class="modal-body">
+                <p><b>【麥高芬劇團】</b></p>
+                <p>「麥高芬（MacGuffin）」是推動故事前進的核心動力。我們是政大傳院麥高芬劇團，致力於透過劇場尋找每個人心中最真實的自我與情感共鳴。</p>
+                <br>
+                <p><b>【冬季公演：《收信快樂》】</b></p>
+                <p>改編自 Albert Ramsdell Gurney 的《Love Letters》。一段跨越 40 年、幾百封手寫信的故事。李政國與陳淑芬從國小走廊的撞倒事故開始，用一生書寫彼此的孤單、成長與「懂」。</p>
+                <br>
+                <p style="color: #8c6d53; font-style: italic;">* 拾級而上，到傳院樓梯頂端的郵局，寫下屬於你的第一封信吧！</p>
+            </div>
+            <button class="close-btn" onclick="closeModal('board-modal')">理解了，繼續探索</button>
+        </div>
+
+        <!-- 寫信 Modal -->
+        <div id="letter-modal" class="modal">
+            <div class="modal-title">✉️ 回憶郵局 - 寫一封信</div>
+            <div class="modal-body">
+                <p>挑選一枚主題郵票，寫下你想傳遞的心情：</p>
+                <div class="stamp-selector">
+                    <div class="stamp-option active" onclick="selectStamp(this, '燒餅貓咪')">🐱 貓跳燒餅</div>
+                    <div class="stamp-option" onclick="selectStamp(this, '削過的鉛筆')">✏️ 削過一次的鉛筆</div>
+                    <div class="stamp-option" onclick="selectStamp(this, '聖誕蠟封')">🎄 聖誕封蠟</div>
+                </div>
+                <textarea id="letter-content" placeholder="親愛的... 上課不可以傳紙條，但我還是想寫信給你..."></textarea>
+            </div>
+            <button class="close-btn" style="background:#e07a5f;" onclick="sendLetter()">蓋上郵戳，寄出信件！</button>
+            <button class="close-btn" style="background:#aaa; margin-top:6px;" onclick="closeModal('letter-modal')">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf4ecd8); // Warm retro background
+        scene.fog = new THREE.FogExp2(0xf4ecd8, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfffaed, 0.8);
+        dirLight.position.set(20, 40, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // --- Environment Construction (NCCU College of Communication Stairs) ---
+        // Ground / Hill Slope
+        const groundGeo = new THREE.PlaneGeometry(100, 100);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x93a373, roughness: 0.9 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Main Concrete Wall & Arch (傳播學院主建物壁面)
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xa8a297, roughness: 0.7 });
+        const wallBlock = new THREE.Mesh(new THREE.BoxGeometry(16, 12, 3), wallMat);
+        wallBlock.position.set(-6, 6, -10);
+        wallBlock.castShadow = true;
+        wallBlock.receiveShadow = true;
+        scene.add(wallBlock);
+
+        // Arch Entrance
+        const archMat = new THREE.MeshStandardMaterial({ color: 0x5a554c });
+        const arch = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 3.2, 16, 1, false, 0, Math.PI), archMat);
+        arch.position.set(-6, 4, -8.5);
+        arch.rotation.x = Math.PI / 2;
+        scene.add(arch);
+
+        // College Signboard Canvas Texture
+        function createTextTexture(text, text2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#9e3d31'; // Red Text
+            ctx.fillRect(0, 0, 512, 128);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'Bold 36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, 256, 50);
+            ctx.font = '20px sans-serif';
+            ctx.fillText(text2, 256, 95);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const signMat = new THREE.MeshBasicMaterial({ map: createTextTexture("傳播學院", "COLLEGE OF COMMUNICATION") });
+        const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), signMat);
+        signMesh.position.set(-6, 7.5, -8.4);
+        scene.add(signMesh);
+
+        // Stairs Construction (傳院階梯)
+        const stairMat = new THREE.MeshStandardMaterial({ color: 0x827d75, roughness: 0.8 });
+        const numSteps = 14;
+        for (let i = 0; i < numSteps; i++) {
+            const step = new THREE.Mesh(new THREE.BoxGeometry(7, 0.4, 1.2), stairMat);
+            step.position.set(2, i * 0.35 + 0.2, 5 - i * 0.9);
+            step.castShadow = true;
+            step.receiveShadow = true;
+            scene.add(step);
+        }
+
+        // --- Trees & Foliage ---
+        function createTree(x, z, isDead = false) {
+            const group = new THREE.Group();
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 3), trunkMat);
+            trunk.position.y = 1.5;
+            trunk.castShadow = true;
+            group.add(trunk);
+
+            const foliageMat = new THREE.MeshStandardMaterial({ color: isDead ? 0x8a7258 : 0x527a43, roughness: 0.9 });
+            const foliage = new THREE.Mesh(new THREE.ConeGeometry(2, 4, 7), foliageMat);
+            foliage.position.y = 4;
+            foliage.castShadow = true;
+            group.add(foliage);
+
+            group.position.set(x, 0, z);
+            scene.add(group);
+            return foliageMat;
+        }
+
+        createTree(-12, -4);
+        createTree(-10, 4);
+        createTree(8, -6);
+        const memoryTreeMat = createTree(5, -8, true); //枯樹修復標的
+
+        // --- Interactive Objects ---
+        // 1. Board (劇團告示牌)
+        const boardGroup = new THREE.Group();
+        const boardStand = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.2), wallMat);
+        const boardMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 0.1), new THREE.MeshStandardMaterial({ color: 0xfaf0db }));
+        boardMesh.position.y = 1.5;
+        boardGroup.add(boardStand, boardMesh);
+        boardGroup.position.set(5.5, 0, 4);
+        scene.add(boardGroup);
+
+        // 2. Mailbox (回憶郵局 Mailbox at top of stairs)
+        const mailboxGroup = new THREE.Group();
+        const postMat = new THREE.MeshStandardMaterial({ color: 0xcc4433 });
+        const postBox = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 1), postMat);
+        postBox.position.y = 2;
+        postBox.castShadow = true;
+        const postPole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), wallMat);
+        postPole.position.y = 0.75;
+        mailboxGroup.add(postBox, postPole);
+        mailboxGroup.position.set(2, 5, -8);
+        scene.add(mailboxGroup);
+
+        // --- Player (Cute Animal Crossing Style Character) ---
+        const playerGroup = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xe07a5f });
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xf2cc8f });
+
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 1.2, 12), bodyMat);
+        body.position.y = 0.6;
+        body.castShadow = true;
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), headMat);
+        head.position.y = 1.5;
+        head.castShadow = true;
+
+        playerGroup.add(body, head);
+        playerGroup.position.set(2, 0, 8);
+        scene.add(playerGroup);
+
+        // --- Controls & Logic ---
+        const keys = { w: false, a: false, s: false, d: false };
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (keys.hasOwnProperty(k)) keys[k] = true;
+            if (e.key === 'e' || e.key === 'E') triggerInteraction();
+        });
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (keys.hasOwnProperty(k)) keys[k] = false;
+        });
+
+        let currentActiveInteract = null;
+
+        function checkProximity() {
+            const playerPos = playerGroup.position;
+            const distToBoard = playerPos.distanceTo(boardGroup.position);
+            const distToMailbox = playerPos.distanceTo(mailboxGroup.position);
+
+            const prompt = document.getElementById('interact-prompt');
+
+            if (distToBoard < 2.5) {
+                prompt.style.display = 'block';
+                prompt.innerText = '按 [E] 查看【麥高芬劇團告示牌】';
+                currentActiveInteract = 'board';
+            } else if (distToMailbox < 2.5) {
+                prompt.style.display = 'block';
+                prompt.innerText = '按 [E] 打開【回憶郵局寫信】';
+                currentActiveInteract = 'mailbox';
+            } else {
+                prompt.style.display = 'none';
+                currentActiveInteract = null;
+            }
+        }
+
+        function triggerInteraction() {
+            if (currentActiveInteract === 'board') {
+                document.getElementById('board-modal').style.display = 'block';
+            } else if (currentActiveInteract === 'mailbox') {
+                document.getElementById('letter-modal').style.display = 'block';
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function selectStamp(el, name) {
+            document.querySelectorAll('.stamp-option').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function sendLetter() {
+            const text = document.getElementById('letter-content').value;
+            if (!text.trim()) {
+                alert('請先寫點字吧！');
+                return;
+            }
+            alert('✉️ 信件已寄出！回憶的力量讓傳院的枯樹復甦了！');
+            closeModal('letter-modal');
+            document.getElementById('letter-content').value = '';
+
+            // Restore tree animation
+            memoryTreeMat.color.setHex(0x527a43); // Turn green
+        }
+
+        // --- Main Game Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Movement Speed
+            const moveSpeed = 0.12;
+            if (keys.w) playerGroup.position.z -= moveSpeed;
+            if (keys.s) playerGroup.position.z += moveSpeed;
+            if (keys.a) playerGroup.position.x -= moveSpeed;
+            if (keys.d) playerGroup.position.x += moveSpeed;
+
+            // Stair Height adjustment approximation
+            if (playerGroup.position.x > -1.5 && playerGroup.position.x < 5.5 && playerGroup.position.z < 6 && playerGroup.position.z > -7) {
+                const progress = (6 - playerGroup.position.z) / 13;
+                playerGroup.position.y = Math.max(0, progress * 5);
+            } else {
+                playerGroup.position.y = 0;
+            }
+
+            // Camera follow (Animal Crossing Iso View)
+            camera.position.x = playerGroup.position.x + 10;
+            camera.position.y = playerGroup.position.y + 12;
+            camera.position.z = playerGroup.position.z + 14;
+            camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1, playerGroup.position.z);
+
+            checkProximity();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Responsive Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
