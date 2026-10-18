@@ -1,0 +1,234 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ★ 換成你的管理員 Email（要先在 Authentication 建立這個帳號）
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'password'
+          && request.auth.token.email == 'YOUR_ADMIN_EMAIL@example.com';
+    }
+    function isOwner() {
+      return request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    function bad(s) {
+      return s is string && s.lower().matches('.*(幹你|幹妳|幹您|幹他|操你|操妳|肏|靠北|靠杯|三小|白痴|白癡|智障|低能|腦殘|去死|死全家|廢物|賤人|婊子|機掰|雞掰|你媽|他媽|媽的|shit|fuck|bitch|asshole|nazi|kys).*');
+    }
+    function clean(d) {
+      return !bad(d.get('text', '')) && !bad(d.get('by', '')) && !bad(d.get('to', ''));
+    }
+    // 淑芬的畫：畫名與圖片的共同檢查（新增、修改都用）
+    function goodArt(d) {
+      return d.title is string
+          && d.title.size() <= 24
+          && !bad(d.title)
+          && d.img is string
+          && d.img.size() < 180000
+          && d.img.matches('^data:image/jpeg;base64,.*');
+    }
+
+    // ===== 3D 收信小鎮（m3_ 開頭）=====
+    // 公開信
+    match /m3_letters/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() <= 600
+                    && clean(request.resource.data);
+      allow update: if isOwner()
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.text.size() <= 600
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 加密信（內容是密文，網頁用 5 位數代碼的雜湊來查詢）
+    match /m3_sealed/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.ct is string
+                    && request.resource.data.ct.size() <= 4000
+                    && clean(request.resource.data);
+      allow update: if isOwner()
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.ct.size() <= 4000;
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 「收到了」愛心：每人每封一個
+    match /m3_hearts/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && id == request.resource.data.l + '_' + request.auth.uid;
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 留言板（海邊留言板、展覽留言簿、天燈許願牆）：每人一張一張釘，只能刪自己的
+    match /m3_board/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.kind in ['beach', 'guest', 'lantern']
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 2
+                    && request.resource.data.text.size() <= 80
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 淑芬的畫室：每人一幅一幅掛；作者可以改名、重畫（不能改作者），只能刪自己的
+    match /m3_art/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && goodArt(request.resource.data);
+      allow update: if isOwner()
+                    && request.resource.data.uid == resource.data.uid
+                    && goodArt(request.resource.data)
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'title', 'img', 'ts', 'edited']);
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 淑芬的畫室：畫作底下的回覆（每則最多 60 字）
+    // 留言的人、那幅畫的作者、管理員可以刪
+    match /m3_artre/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.art is string
+                    && request.resource.data.art.size() <= 64
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 1
+                    && request.resource.data.text.size() <= 60
+                    && request.resource.data.ts is number
+                    && request.resource.data.keys().hasOnly(['art', 'uid', 'name', 'text', 'ts'])
+                    && clean(request.resource.data)
+                    && !bad(request.resource.data.get('name', ''));
+      allow delete: if isOwner() || isAdmin()
+                    || (request.auth != null
+                        && exists(/databases/$(database)/documents/m3_art/$(resource.data.art))
+                        && get(/databases/$(database)/documents/m3_art/$(resource.data.art)).data.uid == request.auth.uid);
+    }
+    // 傳院白牆塗鴉：每次存一小批噴漆筆畫（JSON 字串），只能刪自己的
+    match /m3_graffiti/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.w in ['n', 's']
+                    && request.resource.data.s is string
+                    && request.resource.data.s.size() <= 30000
+                    && request.resource.data.ts is number
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'w', 'ts', 's']);
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 即時通：在線玩家的位置（只能寫自己那一份；超過 2 分鐘沒更新就當作離線）
+    match /m3_pres/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['name', 'look', 'a', 'x', 'z', 'ry', 'ts', 'off'])
+                    && request.resource.data.ts is number
+                    && (request.resource.data.get('name', '') is string)
+                    && !bad(request.resource.data.get('name', ''));
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // 即時通：公開聊天（每句最多 40 字，只能刪自己的）
+    match /m3_chat/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 1
+                    && request.resource.data.text.size() <= 40
+                    && request.resource.data.ts is number
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'a', 'ts', 'e'])
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 即時通：私訊與互動（打招呼、送花），只有收件人和寄件人讀得到
+    match /m3_dm/{id} {
+      allow read: if request.auth != null
+                  && (resource.data.uid == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.to is string
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 1
+                    && request.resource.data.text.size() <= 40
+                    && request.resource.data.k in ['msg', 'act']
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'to', 'k', 'text', 'ts'])
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    // 連線小遊戲「默契信」：每人每回合一個答案
+    match /m3_sync/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && id == string(request.resource.data.r) + '_' + request.auth.uid
+                    && request.resource.data.w is string
+                    && request.resource.data.w.size() >= 1
+                    && request.resource.data.w.size() <= 8
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'r', 'w', 'ts'])
+                    && clean(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    // 舊版的兌換紀錄（新版已不再寫入，保留給以前的資料）
+    match /m3_redeem/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow delete: if isAdmin();
+    }
+    // 鎮上寄出的信件總數（每次只能 +1）
+    match /m3_stats/{id} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.sent == 1;
+      allow update: if request.auth != null && request.resource.data.sent == resource.data.sent + 1;
+    }
+    // 玩家進度（只有自己讀寫）
+    match /m3_users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // 管理員的加密金鑰（公鑰公開、私鑰只有管理員）
+    match /m3_cfg/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /m3_admin/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // ===== 舊版 2D 遊戲（保留）=====
+    match /letters/{space}/{coll}/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.uid is string
+                    && request.resource.data.uid.size() <= 64
+                    && clean(request.resource.data);
+      allow update: if isOwner()
+                    && request.resource.data.uid == resource.data.uid
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    match /stamps/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.uid is string
+                    && request.resource.data.img is string
+                    && request.resource.data.img.size() < 400000
+                    && request.resource.data.date in ['12/12', '12/13', 'mg']
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    match /scomments/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.uid is string
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() <= 200
+                    && clean(request.resource.data);
+      allow delete: if isOwner() || isAdmin();
+    }
+    match /likes/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && id == request.resource.data.s + '_' + request.auth.uid;
+      allow delete: if isOwner() || isAdmin();
+    }
+  }
+}
