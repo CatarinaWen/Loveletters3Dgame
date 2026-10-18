@@ -68,6 +68,8 @@ input.txt:focus,textarea.txt:focus{border-color:var(--teal)}
 @media (prefers-reduced-motion:reduce){#sfx *{animation-duration:.01s!important}}
 .bubble.cat{background:#fffaf0;color:var(--ink2);border-color:#b9a37a;font-style:italic}
 .catfx{position:fixed;z-index:4;font-size:22px;pointer-events:none;transform:translate(-50%,-50%)}
+#mm{position:fixed;right:12px;top:calc(76px + env(safe-area-inset-top));width:132px;height:132px;z-index:21;cursor:pointer;filter:drop-shadow(0 3px 8px rgba(60,40,20,.3));display:none}
+@media (max-width:600px){#mm{width:96px;height:96px;top:calc(104px + env(safe-area-inset-top));right:8px}}
 #act{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);display:none}
 #act button{background:var(--paper);border:2.5px solid var(--red);border-radius:99px;padding:11px 22px;font-size:17px;box-shadow:var(--shadow),0 0 0 5px rgba(255,250,240,.55);animation:pulse 1.6s ease-in-out infinite;letter-spacing:.06em;white-space:nowrap}
 @keyframes pulse{50%{transform:scale(1.05)}}
@@ -1209,8 +1211,8 @@ function buildWorld(scene,Q){
   B.pop();G.pop()}
  // 辦公室電線桿
  {const x=6,z=19;bx(B,.25,6,.25,x,0,z,'#6b4a33');bx(B,1.8,.18,.18,x,5.4,z,'#6b4a33');W.cols.push({x,z,r:.4})}
- /* 廣場：聖誕樹（自己一個網格：擋到招牌時會變半透明） */
- {const TM_=VC.clone(),TG_=winMat.clone();TM_.transparent=TG_.transparent=true;const B=new Batch(TM_),G=new Batch(TG_);
+ /* 廣場：聖誕樹 */
+ {const B=new Batch(VC),G=new Batch(winMat);
   const x=0,z=0;cy(B,.5,1,x,0,z,'#6b4a33',8);let y=.8,r=3.3;const cs=['#3f7a52','#4a8a5a','#3a6f4c','#55945f'];
   for(let i=0;i<4;i++){cn(B,r,2.5,x,y,z,cs[i],10,{w:.1});y+=1.6;r*=.76}
   cn(B,.35,.9,x,y+.5,z,'#e4c36a',5,{j:0});
@@ -1218,7 +1220,7 @@ function buildWorld(scene,Q){
   for(let i=0;i<46;i++){const a=i*2.4,h=1+(i/46)*5.2,rr=3.3*Math.pow(.76,Math.floor((h-.8)/1.6))*(1-((h-.8)%1.6)/2.5)+.1;G.add(sph(5),['#ffd36b','#ff8a7a','#9fd3ff','#fff1c9'][i%4],mat(x+Math.cos(a)*rr,h,z+Math.sin(a)*rr,.13,.13,.13),{j:0})}
   for(let i=0;i<5;i++){const a=i*1.3;bx(B,.7,.55,.7,Math.cos(a)*1.9+x,0,Math.sin(a)*1.9+z,['#c0523f','#4f8791','#d9a441','#8aa37b','#b779a5'][i],a)}
   W.cols.push({x,z,r:1.7});mkLamp(0,y+1.45,0,6,'#ffe7a0',outG,true);
-  const tm=B.mesh(Q.shadows),tg=G.mesh(false);outG.add(tm,tg);W.xmas={x,z,r:3.4,top:y+1.9,mats:[TM_,TG_],op:1}}
+  const tm=B.mesh(Q.shadows),tg=G.mesh(false);outG.add(tm,tg)}
  /* 路燈、長椅 */
  const lampPost=(x,z)=>{bx(B,.14,3,.14,x,0,z,'#3f4a4a');sp(B,.26,x,3.3,z,'#ffd58a',1,1.2,1,6,{j:0});G.add(sph(6),'#ffe3a0',mat(x,3.3,z,.22,.28,.22),{j:0});W.cols.push({x,z,r:.3});mkLamp(x,3.3,z,4)};
  [[7,6],[-13,3],[7,-6],[-7,-6],[-5.5,-12.5],[-5.5,13.5],[-14,-5.5],[14,5.5],[-16,12],[11,-17]].forEach(p=>lampPost(p[0],p[1]));
@@ -1375,7 +1377,7 @@ function buildWorld(scene,Q){
   snow.position.set(Math.round(cam.x/50)*50,0,Math.round(cam.z/50)*50);sgeo.attributes.position.needsUpdate=true};
  /* 聖誕樹信封裝飾 */
  const orn=new T.Group();outG.add(orn);W.orn=[];for(let i=0;i<40;i++){const h=1.1+(i/40)*4.8,a=i*2.4+.7,rr=(3.3*Math.pow(.76,Math.floor((h-.8)/1.6))*(1-((h-.8)%1.6)/2.5))+.25;
-  const m=new T.Mesh(new T.BoxGeometry(.32,.22,.04),TM(['#f4ead5','#f4a7b9','#bfe4f0','#f7e09a'][i%4]).clone());m.position.set(Math.cos(a)*rr,h,Math.sin(a)*rr);m.rotation.y=-a+PI/2;m.rotation.z=(i%5-2)*.1;m.visible=false;orn.add(m);W.orn.push(m)}
+  const m=new T.Mesh(new T.BoxGeometry(.32,.22,.04),TM(['#f4ead5','#f4a7b9','#bfe4f0','#f7e09a'][i%4]));m.position.set(Math.cos(a)*rr,h,Math.sin(a)*rr);m.rotation.y=-a+PI/2;m.rotation.z=(i%5-2)*.1;m.visible=false;orn.add(m);W.orn.push(m)}
  W.setSent=n=>{W.orn.forEach((m,i)=>m.visible=i<n);const c=Math.min(900,300+n*25);W.snowN=c;sgeo.setDrawRange(0,c)};
  outG.add(B.mesh(Q.shadows));outG.add(G.mesh(false));
  W.guideStart={x:3,z:5};
@@ -2212,9 +2214,15 @@ function initEngine(look){
  Eng.setArea('campus',W.rooms.campus.spawn,true);
  requestAnimationFrame(loop)}
 const OUTC=['#c0523f','#4f8791','#d9a441','#8aa37b','#b779a5','#4a5a8a'],HAIRC=['#4a3328','#2a201b','#8a5a3a','#d9a441','#c9788a','#6b7fbf'];
+const SHARED_GEO=new Set();
+function freeChar(o){ // 換造型時把舊角色的幾何體釋放掉，避免手機記憶體越用越多
+ if(!SHARED_GEO.size)[BOX,PRISM].concat(Object.values(SPH),Object.values(CYL),Object.values(CON)).forEach(g=>g&&SHARED_GEO.add(g));
+ o.traverse(m=>{if(m.geometry&&!SHARED_GEO.has(m.geometry))m.geometry.dispose()})}
 function setLook(look){
- if(pl.obj){scene.remove(pl.obj)}
- pl.obj=makeChar({sp:look.sp,g:look.g||'f',hs:look.h,ci:look.c,body:OUTC[(look.c||0)%OUTC.length],hair:HAIRC[(look.hc==null?look.c:look.hc)%HAIRC.length],acc:look.acc||[]});scene.add(pl.obj)}
+ let keep=null;
+ if(pl.obj){const u=pl.obj.userData;keep={sitting:u.sitting,crouch:u.crouch,act:u.act};scene.remove(pl.obj);if(Achi._prop)Achi.prop(null);safe('free',()=>freeChar(pl.obj))}
+ pl.obj=makeChar({sp:look.sp,g:look.g||'f',hs:look.h,ci:look.c,body:OUTC[(look.c||0)%OUTC.length],hair:HAIRC[(look.hc==null?look.c:look.hc)%HAIRC.length],acc:look.acc||[]});scene.add(pl.obj);
+ if(keep)Object.assign(pl.obj.userData,keep);pl.obj.position.set(pl.x,pl.y,pl.z);pl.obj.rotation.y=pl.ry}
 function onResize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}
 const heightAt=(a,x,z,y)=>{const R=W.rooms[a];return R&&R.heightAt?R.heightAt(x,z,y):0};
 Eng.heightAt=heightAt;
@@ -2293,7 +2301,10 @@ function collide(a,x,z,r,y){
 let last=0;
 function loop(ts){
  requestAnimationFrame(loop);const dt=Math.min(.05,(ts-last)/1000||0.016);last=ts;Eng.t+=dt;const t=Eng.t;
- update(dt,t);renderer.render(scene,camera)}
+ if(ts-(Diag.lastTs||ts)>2000&&!document.hidden)Diag.log('stall',Math.round(ts-Diag.lastTs)+'ms');Diag.lastTs=ts;
+ // 任何一個系統出錯都不能讓畫面停住：照樣畫圖，錯誤記到「問題紀錄」
+ try{update(dt,t)}catch(e){Diag.err(e,'update')}
+ try{renderer.render(scene,camera)}catch(e){Diag.err(e,'render')}}
 function update(dt,t){
  const a=Eng.area,R=W.rooms[a];
  // 輸入
@@ -2401,24 +2412,20 @@ function updateCamera(dt,t){
  // 往上看天空：pit<0 時視線上抬
  const up=Math.max(0,-pit)*14;_lk.set(PX,tgY+up-(F&&F.dy||0),PZ);
  if(dd<1.7){_lk.set(pl.x-Math.sin(Eng.yaw)*3,headY+Math.sin(-pit*.6)*2,pl.z-Math.cos(Eng.yaw)*3)}
- camera.lookAt(_lk);lampsNearCam();fadeXmas(dt);Cafe.tick(dt);Achi.tick(dt,t)}
-const _sv=new T.Vector3();let _ray=null;
+ camera.lookAt(_lk);safe('lamps',lampsNearCam);safe('cafe',()=>Cafe.tick(dt));safe('achi',()=>Achi.tick(dt,t))}
+const _sv=new T.Vector3();
+const Diag={list:[],lastTs:0,
+ log(k,m){const r={t:new Date().toLocaleTimeString(),k,m:String(m).slice(0,240),a:typeof Eng!=='undefined'?Eng.area:''};const L=Diag.list,last=L[L.length-1];if(last&&last.k===k&&last.m===r.m){last.n=(last.n||1)+1;return}L.push(r);if(L.length>40)L.shift();console.warn('[diag]',k,m)},
+ err(e,where){Diag.log(where||'error',(e&&(e.message||e))+(e&&e.stack?' @ '+String(e.stack).split('\n')[1]:''))}};
+const safe=(k,f)=>{try{f()}catch(e){Diag.err(e,k)}};
+addEventListener('error',e=>Diag.log('error',(e.message||'')+' @'+(e.lineno||'')));
+addEventListener('unhandledrejection',e=>Diag.log('promise',e.reason&&(e.reason.message||e.reason)));
+document.addEventListener('visibilitychange',()=>{Diag.lastTs=0});let _ray=null;
 function clickPick(e){
  if(Modal.on||Dlg.on||Eng.lock||cineCam||!P.started)return;const cv=$('gl'),b=cv.getBoundingClientRect();
  const list=CLICKS.filter(c=>c.room===Eng.area&&c.o.visible);if(!list.length)return;
  _ray=_ray||new T.Raycaster();_ray.setFromCamera(new T.Vector2(((e.clientX-b.left)/b.width)*2-1,-((e.clientY-b.top)/b.height)*2+1),camera);_ray.far=22;
  const h=_ray.intersectObjects(list.map(c=>c.o),false)[0];if(!h)return;const c=list.find(c=>c.o===h.object);Snd.play('click');c.fn()}
-// 聖誕樹擋在鏡頭和招牌之間時，暫時變半透明，讓招牌上的字看得到
-function fadeXmas(dt){
- const X=W.xmas;if(!X)return;let tgt=1;
- if(Eng.area==='world'&&W.signs){const c=camera.position;
-  for(const s of W.signs){if(!s.visible)continue;s.getWorldPosition(_sv);if(_sv.distanceToSquared(c)>60*60)continue;
-   const dx=_sv.x-c.x,dz=_sv.z-c.z,L2=dx*dx+dz*dz;if(L2<1)continue;const k=clamp(((X.x-c.x)*dx+(X.z-c.z)*dz)/L2,0,1);
-   if(k<=0||k>=1)continue;const px=c.x+dx*k-X.x,pz=c.z+dz*k-X.z,py=c.y+(_sv.y-c.y)*k;
-   if(px*px+pz*pz<X.r*X.r&&py<X.top){tgt=.22;break}}}
- if(Math.abs(X.op-tgt)<.005)return;X.op+=(tgt-X.op)*Math.min(1,dt*6);if(Math.abs(X.op-tgt)<.01)X.op=tgt;
- for(const m of X.mats){m.opacity=X.op;m.depthWrite=X.op>.99}
- if(W.orn)W.orn.forEach(m=>{m.material.transparent=true;m.material.opacity=X.op})}
 function lampsNearCam(){
  if(!W.lamps)return;const c=camera.position;
  // 貼在鏡頭前的燈光會把畫面整片蓋白：太靠近鏡頭的光暈先藏起來
@@ -2522,6 +2529,7 @@ function openSettings(){
  Modal.open(`<h2>設定</h2><div class="row"><button class="chip ${Snd.musicOn()?'on':''}" id="s1">🎵 音樂</button><button class="chip ${Snd.sfxOn()?'on':''}" id="s2">🔊 音效</button><button class="chip ${Snd.ambOn()?'on':''}" id="s6">🌿 環境音</button><button class="chip ${Eng.fp?'on':''}" id="s3">👁 第一人稱</button></div>
  <div class="lab" style="margin:6px 0">時間</div><div class="row">${[['auto','跟著現實時間'],['day','白天'],['dusk','黃昏'],['night','夜晚']].map(t=>`<button class="chip ${Eng.timeMode==t[0]?'on':''}" data-tm="${t[0]}">${t[1]}</button>`).join('')}</div>
  <div class="row"><button class="btn sm ghost" id="s4">傳送去…</button><button class="btn sm ghost" id="s5">重看開場</button></div>
+ <details style="margin-top:6px"><summary class="tiny">🛠️ 問題紀錄（${Diag.list.length}）</summary><p class="tiny">遇到卡住或怪怪的地方，請截圖這裡給我們。</p><div class="tiny" style="max-height:180px;overflow:auto;background:#fffaf0;border:1px solid var(--line);border-radius:6px;padding:6px;word-break:break-all">${Diag.list.length?Diag.list.slice().reverse().map(r=>`<div>${esc(r.t)} [${esc(r.a)}] ${esc(r.k)}${r.n?' ×'+r.n:''}：${esc(r.m)}</div>`).join(''):'目前沒有問題 👍'}</div><div class="tiny" style="margin-top:4px">${esc(navigator.userAgent)}</div></details>
  <p class="tiny">連線狀態：${Store.mode==='firebase'?'已連線，信件會讓大家都看見':'單機模式（信件只存在這台裝置）'}${Store.err?'<br>'+esc(Store.err):''}</p>
  <details style="margin-top:8px"><summary class="tiny">管理員登入</summary><div id="adm" style="margin-top:6px">${Store.admin?'<p class="tiny">已登入管理員</p><div class="row"><button class="btn sm" id="a1">管理全部信件</button><button class="btn sm ghost" id="a2">登出</button></div>':'<input class="txt" id="ae" placeholder="Email" style="margin-bottom:6px"><input class="txt" id="ap" type="password" placeholder="密碼"><div class="row"><button class="btn sm" id="a0">登入</button></div><div class="warn" id="aw"></div>'}</div></details>`,m=>{
   m.querySelector('#s1').onclick=e=>{Snd.setMusic(!Snd.musicOn());e.target.classList.toggle('on')};m.querySelector('#s2').onclick=e=>{Snd.setSfx(!Snd.sfxOn());e.target.classList.toggle('on')};
@@ -3465,7 +3473,7 @@ const Soc={on:false,local:false,started:false,peers:{},pub:[],dm:{},tab:'pub',cu
   p.name=String(d.name||'旅人').slice(0,8);p.a=d.a;p.tx=d.x;p.tz=d.z;p.try=d.ry||0;p.ts=Date.now();p.look=d.look;
   if(p.a!==p.pa){p.x=d.x;p.z=d.z;p.pa=p.a}
   Soc.count()},
- drop(id){const p=Soc.peers[id];if(!p)return;scene.remove(p.obj);if(p.el)p.el.remove();if(p.bub)p.bub.remove();delete Soc.peers[id];Soc.count()},
+ drop(id){const p=Soc.peers[id];if(!p)return;scene.remove(p.obj);safe('free',()=>freeChar(p.obj));if(p.el)p.el.remove();if(p.bub)p.bub.remove();delete Soc.peers[id];Soc.count()},
  count(){const n=Object.keys(Soc.peers).length;const e=$('chn');if(e)e.textContent=n+1;if(Soc.open&&Soc.tab==='on')Soc.render()},
  tick(dt){
   if(!Soc.started)return;
@@ -3845,7 +3853,62 @@ setInterval(()=>{
  const busy=Dlg.on||Modal.on||Game.fx||(Eng.anims>0)||Achi.anim||Game.fishBusy||Graf.on||($('skip')&&!$('skip').classList.contains('hide'))||document.getElementById('sfx');
  const stuck=(Eng.lock>0||cineCam)&&!busy&&!Eng.sit&&!Achi.busy;
  Eng.stuckT=stuck?(Eng.stuckT||0)+1:0;
- if(Eng.stuckT>=4){Eng.stuckT=0;Eng.lock=0;Eng.setCine(null);if(pl.obj)pl.obj.userData.act=null;console.warn('unstuck')}},1000);
+ if(Eng.stuckT>=4){Eng.stuckT=0;Diag.log('unstuck','lock='+Eng.lock+' cine='+!!cineCam);Eng.lock=0;Eng.setCine(null);if(pl.obj)pl.obj.userData.act=null}},1000);
+
+/* ================= 地圖：右上角小地圖（以你為中心）＋點開看整張地圖 ================= */
+const MapUI={bg:{},S:4,el:null,
+ ext(a){const R=W.rooms[a];if(a==='world')return{x0:-ISLE-4,x1:ISLE+4,z0:-ISLE-4,z1:ISLE+4};
+  const b=R&&R.bounds,ox=(R&&R.ox)||0;if(b)return{x0:b.x0+ox-1,x1:b.x1+ox+1,z0:b.z0-1,z1:b.z1+1};return{x0:ox-20,x1:ox+20,z0:-20,z1:20}},
+ floor:{world:'#bfe0a8',campus:'#d9d4c6',hall:'#eadfc8',memory:'#e6d7b8',theatre:'#4a3a46',post:'#d9b88a',gallery:'#efe6d2',office:'#b9946a'},
+ // 每個區域的底圖只畫一次：地面、建築、牆、樹
+ base(a){if(MapUI.bg[a])return MapUI.bg[a];const E=MapUI.ext(a),S=MapUI.S,c=mkc(Math.ceil((E.x1-E.x0)*S),Math.ceil((E.z1-E.z0)*S)),x=c.getContext('2d');
+  const X=v=>(v-E.x0)*S,Z=v=>(v-E.z0)*S;x.fillStyle='#8fb7c7';x.fillRect(0,0,c.width,c.height);
+  if(a==='world'){x.fillStyle='#f1e2b8';x.beginPath();x.arc(X(0),Z(0),(ISLE+1)*S,0,TAU);x.fill();x.fillStyle=MapUI.floor.world;x.beginPath();x.arc(X(0),Z(0),(ISLE-3)*S,0,TAU);x.fill();
+   x.strokeStyle='#e9dcc0';x.lineCap='round';x.lineWidth=2.6*S;for(const P_ of PATHS){x.beginPath();P_.forEach((q,i)=>i?x.lineTo(X(q[0]),Z(q[1])):x.moveTo(X(q[0]),Z(q[1])));x.stroke()}}
+  else{x.fillStyle=MapUI.floor[a]||'#e0d6c0';x.fillRect(S,S,c.width-2*S,c.height-2*S)}
+  for(const q of W.cols){if((q.room||'world')!==a)continue;
+   if(q.tree){x.fillStyle='rgba(74,130,82,.75)';x.beginPath();x.arc(X(q.x),Z(q.z),Math.max(1.2,q.cr*.7)*S,0,TAU);x.fill();continue}
+   x.fillStyle=q.tall?'#8a7a68':'#b3a48c';
+   if(q.hx!==undefined){x.fillRect(X(q.x-q.hx),Z(q.z-q.hz),q.hx*2*S,q.hz*2*S)}else if(q.r!==undefined){x.beginPath();x.arc(X(q.x),Z(q.z),q.r*S,0,TAU);x.fill()}}
+  if(a==='world')for(const k in PL){const p=PL[k];x.save();x.translate(X(p.x),Z(p.z));x.rotate(-p.rot);x.fillStyle={post:'#c75b4a',theatre:'#5e9099',gallery:'#cfc8b8',office:'#d0a672'}[k];x.fillRect(-p.w/2*S,-p.d/2*S,p.w*S,p.d*S);x.restore()}
+  return MapUI.bg[a]={c,E}},
+ marks(a){const o=[];
+  for(const s of W.spots)if(s.room===a&&s.label)o.push({x:s.x,z:s.z,t:s.label,i:s.icon||'•'});
+  if(a==='world')for(const d of W.doors)o.push({x:d.x,z:d.z,t:d.name,i:'🚪',big:1});
+  for(const n of NPCS)if(n.d.room===a&&n.d.talk)o.push({x:n.x,z:n.z,t:n.d.name,i:'💬'});
+  return o},
+ goal(){try{const g=Goal.tgt();return g?{x:g[0],z:g[1]}:null}catch(e){return null}},
+ init(){if(MapUI.el)return;const d=document.createElement('canvas');d.id='mm';d.width=d.height=240;d.title='地圖';document.body.appendChild(d);MapUI.el=d;
+  d.onclick=()=>{if(!Modal.on&&!Dlg.on&&!Eng.lock)MapUI.open()};setInterval(()=>safe('map',MapUI.draw),150)},
+ draw(){const d=MapUI.el;if(!d)return;const hide=!P.started||Modal.on||cineCam||Eng.lock>0&&!Eng.sit;d.style.display=hide?'none':'block';if(hide)return;
+  const a=Eng.area,B=MapUI.base(a),S=MapUI.S,x=d.getContext('2d'),W_=d.width,R_=a==='world'||a==='campus'?22:14,k=W_/(R_*2*S);
+  x.save();x.clearRect(0,0,W_,W_);x.beginPath();x.arc(W_/2,W_/2,W_/2-3,0,TAU);x.clip();x.fillStyle='#8fb7c7';x.fillRect(0,0,W_,W_);
+  const px=(pl.x-B.E.x0)*S,pz=(pl.z-B.E.z0)*S;x.drawImage(B.c,px-R_*S,pz-R_*S,R_*2*S,R_*2*S,0,0,W_,W_);
+  const P2=(X,Z)=>[W_/2+(X-pl.x)*S*k,W_/2+(Z-pl.z)*S*k];
+  x.textAlign='center';x.textBaseline='middle';x.font='22px sans-serif';
+  for(const m of MapUI.marks(a)){const [u,v]=P2(m.x,m.z);if(Math.hypot(u-W_/2,v-W_/2)<W_/2-12)x.fillText(m.i,u,v)}
+  if(Achi.obj&&Achi.s.area===a&&P.achi&&P.achi.met){const [u,v]=P2(Achi.s.x,Achi.s.z);x.fillText('🐈‍⬛',u,v)}
+  const g=MapUI.goal();if(g){let [u,v]=P2(g.x,g.z);const dd=Math.hypot(u-W_/2,v-W_/2),lim=W_/2-16;if(dd>lim){u=W_/2+(u-W_/2)/dd*lim;v=W_/2+(v-W_/2)/dd*lim}
+   const pu=1+Math.sin(performance.now()/250)*.15;x.font=`${Math.round(26*pu)}px sans-serif`;x.fillText('⭐',u,v)}
+  // 你：紅色箭頭，指向你面對的方向
+  x.translate(W_/2,W_/2);x.rotate(PI-pl.ry);
+  x.fillStyle='#c0523f';x.strokeStyle='#fff';x.lineWidth=3;x.beginPath();x.moveTo(0,-16);x.lineTo(11,12);x.lineTo(0,6);x.lineTo(-11,12);x.closePath();x.fill();x.stroke();x.restore();
+  x.strokeStyle='#6b4a33';x.lineWidth=5;x.beginPath();x.arc(W_/2,W_/2,W_/2-3,0,TAU);x.stroke();
+  x.fillStyle='#6b4a33';x.font='bold 20px sans-serif';x.fillText('N',W_/2,16)},
+ open(){
+  const a=Eng.area,B=MapUI.base(a),c=mkc(B.c.width*2,B.c.height*2),x=c.getContext('2d'),S=MapUI.S*2;x.drawImage(B.c,0,0,c.width,c.height);
+  const P2=(X,Z)=>[(X-B.E.x0)*S,(Z-B.E.z0)*S];x.textAlign='center';x.textBaseline='middle';
+  const fs=Math.max(18,Math.min(30,c.width/30));
+  for(const m of MapUI.marks(a)){const [u,v]=P2(m.x,m.z);x.font=`${fs*1.1}px sans-serif`;x.fillText(m.i,u,v);x.font=`${m.big?'bold ':''}${fs*.8}px "Noto Sans TC",sans-serif`;
+   const w=x.measureText(m.t).width+12;x.fillStyle='rgba(255,250,240,.88)';x.fillRect(u-w/2,v+fs*.6,w,fs);x.fillStyle='#4a3a2c';x.fillText(m.t,u,v+fs*1.1)}
+  const g=MapUI.goal();if(g){const [u,v]=P2(g.x,g.z);x.font=`${fs*1.6}px sans-serif`;x.fillText('⭐',u,v)}
+  {const [u,v]=P2(pl.x,pl.z);x.save();x.translate(u,v);x.rotate(-pl.ry+PI);x.fillStyle='#c0523f';x.strokeStyle='#fff';x.lineWidth=4;const s=fs*.9;x.beginPath();x.moveTo(0,-s);x.lineTo(s*.7,s*.75);x.lineTo(0,s*.35);x.lineTo(-s*.7,s*.75);x.closePath();x.fill();x.stroke();x.restore()}
+  const cur=QUESTS.find(q=>q.m&&!P.quests[q.id]),n=AREA_NAME[a]||[a,''];
+  Modal.open(`<h2>🗺️ ${esc(n[0])}</h2><p class="d">${esc(n[1]||'')}　<span style="color:var(--red)">▲</span> 是你，⭐ 是下一個目標。</p>
+  <div style="text-align:center"><img src="${c.toDataURL('image/png')}" style="max-width:100%;max-height:58vh;border:3px solid #6b4a33;border-radius:8px"></div>
+  ${cur?`<div class="q" style="margin-top:8px"><b>⭐</b><span>下一步：${esc(cur.t)}${Goal.area[cur.id]&&Goal.area[cur.id]!==a?`<br><small style="color:var(--red)">（要先到「${esc(AREA_NAME[Goal.area[cur.id]][0])}」）</small>`:''}</span></div>`:`<p class="d">主線都走完了！還有 ${12-P.stamps.length} 張郵票藏在小鎮裡。</p>`}
+  <div class="row"><button class="btn sm" id="mq">📋 小鎮手札</button><button class="btn sm ghost" id="mt">✨ 傳送去其他地方</button></div>`,m=>{
+   m.querySelector('#mq').onclick=()=>{Modal.close();openQuest()};m.querySelector('#mt').onclick=()=>{Modal.close();openTeleport()}},{w:'720px'})}};
 
 /* ================= 遊戲流程 ================= */
 let P={name:'旅人',look:{sp:'human',c:0,acc:[]},stamps:[],quests:{},acc:[],sent:0,codes:{}};
@@ -3905,7 +3968,7 @@ const Game={
    crew2:()=>Dlg.say('劇場助理',['噓……演出前要小聲一點。','坐進觀眾席的人，會收到很多很多信；站到舞台中央的人，會走進兩個人的世界。']),
    crew3:()=>Dlg.say('劇場助理',['我是來鎮上找郵票的。','聽說有一張，只在夜裡才看得到。']),
    mailbox:()=>Dlg.say('郵筒先生',['我是麥高芬郵政的郵筒先生。嘴巴很大，什麼信都吞得下。','你想寄信的話，我隨時開張。']
-     ,[{t:'我要寫信',fn:()=>openWrite()},{t:'看看來信牆',alt:1,fn:()=>{Game.warp('post')}},{t:'怎麼玩？',alt:1,fn:()=>Dlg.say('郵筒先生',['在小鎮裡走一走，會找到 12 張郵票，每一張都有一段小故事。','寫下的信會貼上來信牆，也能收到別人的信。','寄出越多信，聖誕樹就越亮，雪也越大。'])},{t:'沒事',alt:1}]),
+     ,[{t:'我要寫信',fn:()=>openWrite()},{t:'看看來信牆',alt:1,fn:()=>openWall()},{t:'怎麼玩？',alt:1,fn:()=>Dlg.say('郵筒先生',['在小鎮裡走一走，會找到 12 張郵票，每一張都有一段小故事。','寫下的信會貼上來信牆，也能收到別人的信。','寄出越多信，聖誕樹就越亮，雪也越大。'])},{t:'沒事',alt:1}]),
    shufen:()=>Dlg.say('淑芬',['我叫陳淑芬。老師說，上課不可以傳紙條。','……但是寫信不算傳紙條，對不對？','（12/12、12/13，在傳院劇場，由黃芷琳演我。她說要把我的信一封一封念給你聽。）'],[{t:'當然不算',alt:1},{t:'看展覽',fn:()=>openAlbum()},{t:'演出資訊',alt:1,fn:()=>openInfo(0)}]),
    shufen2:()=>Dlg.say('淑芬',['我在畫一張卡片，上面有一隻貓。','等畫完，就寄給你。']),
    zhengguo:()=>Dlg.say('政國',['我叫李政國。要寫信給我的話，請寫我的名字。','電話？那是辦公室的老電話，會響很久的。','（演我的是陳奕嘉。他說我小時候的字比較醜，這點不能演錯。）'],[{t:'演出資訊',alt:1,fn:()=>openInfo(0)},{t:'好',alt:1}]),
@@ -3994,7 +4057,7 @@ const Game={
   const lines=[{at:.5,t:'國立政治大學　傳播學院',hold:2.6},{at:3.6,t:'今天，你是收信人。',hold:2.2},{at:6.4,t:'階梯的盡頭，有一扇門。',hold:3}];
   return cine(10.5,(e,k)=>{const s=sm(0,1,k);Eng.camSet(lerp(-46,-12,s),lerp(13,6.5,s),lerp(44,36,s),lerp(-34,-4,s),lerp(3,3.5,s),lerp(-6,-4,s))},lines).then(()=>{Eng.yaw=.45;Eng.pitch=.3;Eng.snapCam=true;Dlg.say('旁白',['國立政治大學，傳播學院。\n這個冬天，麥高芬劇團要演一齣關於「寫信」的戲：《收信快樂》。','今天你是收信人。\n信會找到你，郵票也是。'],null,()=>toast('移動：WASD／搖桿　轉視角：拖曳畫面'))})},
  tick(dt,t){
-  if(P.started){Soc.tick(dt);Goal.update();
+  if(P.started){safe('soc',()=>Soc.tick(dt));safe('goal',()=>Goal.update());
    if(!P.quests.climb&&Eng.area==='campus'&&pl.x>-31&&pl.y>ST-.8)qdone('climb');
    if(!(Modal.on||Dlg.on||Eng.lock||cineCam||Eng.sit||Game.fx)){if(Game.stampQ.length)openStamp(Game.stampQ.shift());else if(CLAIMQ.length)runClaim(CLAIMQ.shift());else if(Game.redeemQ){Game.redeemQ=0;openRedeem()}}}
   // 互動按鈕
@@ -4037,7 +4100,7 @@ function say(txt){Soc.emote&&Soc.emote(txt);const el=document.createElement('div
   setTimeout(()=>{
    try{initEngine(Object.assign({},P.look,{acc:P.acc}))}catch(e){$('tmsg').textContent='你的裝置無法顯示 3D：'+e.message;$('go').disabled=false;$('go').textContent='進入小鎮';console.error(e);return}
    W.spots=W.spots.filter(s=>s.id!=='mailout');
-   P.started=true;Store.saveP(P);$('title').classList.add('hide');$('hud').classList.remove('hide');hud();Game.refreshSent();Soc.init();Graf.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt();setInterval(()=>{Game.refreshSent();Graf.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt()},60000);
+   P.started=true;Store.saveP(P);$('title').classList.add('hide');$('hud').classList.remove('hide');hud();Game.refreshSent();Soc.init();Graf.init();MapUI.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt();setInterval(()=>{Game.refreshSent();Graf.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt()},60000);
    Game.intro();
   },60)};
  $('actb').onclick=()=>Game.act();
