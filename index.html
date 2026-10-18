@@ -39,6 +39,8 @@ input.txt:focus,textarea.txt:focus{border-color:var(--teal)}
 .ib:active{transform:scale(.93)}
 .ib .dot{position:absolute;right:-2px;top:-2px;background:var(--red);color:#fff;border-radius:99px;font-size:11px;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px}
 #cafe{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:min(560px,94vw);background:rgba(244,234,213,.94);border:2px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);z-index:5}
+@media (max-width:600px){#cafe{gap:6px;padding:8px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px)}#cafe button{padding:7px 11px;font-size:14px}#cafe .t{font-size:12px}}
+.seated #sayb,.seated #feed,.seated #joy,.catting #sayb,.catting #joy{display:none!important}
 #cafe .t{width:100%;text-align:center;font-size:13px;color:var(--ink2)}
 #cafe button{background:#fffaf0;border:1.5px solid var(--line);border-radius:99px;padding:8px 14px;font-size:15px;cursor:pointer;color:var(--ink)}
 .cupcard{background:#fffaf0;border:2px solid #b9a37a;border-radius:50%/16%;padding:22px 26px;margin:10px auto;max-width:420px;text-align:center;box-shadow:var(--shadow)}
@@ -64,7 +66,7 @@ input.txt:focus,textarea.txt:focus{border-color:var(--teal)}
 @keyframes sfxBurst{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.3) rotate(220deg);opacity:0}}
 #ba.bump{animation:bump .45s}@keyframes bump{40%{transform:scale(1.35)}}
 @media (prefers-reduced-motion:reduce){#sfx *{animation-duration:.01s!important}}
-.bubble.cat{background:#2b2932;color:#f4ead5;border-color:#5fd16a}
+.bubble.cat{background:#fffaf0;color:var(--ink2);border-color:#b9a37a;font-style:italic}
 .catfx{position:fixed;z-index:4;font-size:22px;pointer-events:none;transform:translate(-50%,-50%)}
 #act{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);display:none}
 #act button{background:var(--paper);border:2.5px solid var(--red);border-radius:99px;padding:11px 22px;font-size:17px;box-shadow:var(--shadow),0 0 0 5px rgba(255,250,240,.55);animation:pulse 1.6s ease-in-out infinite;letter-spacing:.06em;white-space:nowrap}
@@ -280,6 +282,7 @@ body.spraying #gl{cursor:crosshair}
 #feed{position:fixed;left:12px;bottom:calc(64px + env(safe-area-inset-bottom));width:min(300px,62vw);z-index:22;pointer-events:none;display:flex;flex-direction:column;gap:4px}
 #feed .fm{font-size:14px;line-height:1.4;padding:5px 11px;border-radius:14px;background:rgba(251,243,223,.88);color:var(--ink);box-shadow:0 2px 8px rgba(60,40,20,.18);word-break:break-all;animation:fmin .25s ease-out;transition:opacity .9s}
 #feed .fm.out{opacity:0}
+#feed .ft{margin-left:6px;font-size:11px;color:var(--ink2);opacity:.8}
 @keyframes fmin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 #sayb{position:fixed;left:12px;bottom:calc(16px + env(safe-area-inset-bottom));width:min(300px,62vw);z-index:22;display:none}
 #sayb input{width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:8px 14px;border:2px solid rgba(110,80,50,.35);border-radius:99px;background:rgba(251,243,223,.82);color:var(--ink);outline:none}
@@ -582,6 +585,7 @@ const STAMPS=[
 ];
 const PAPERS=[{n:'橫線米白'},{n:'玫瑰小花'},{n:'航空信'},{n:'方格稿紙'},{n:'夜藍星空'}];
 const TO_OPTS=['小鎮的陌生人','未來的自己','很想念的人','麥高芬劇團'];
+const TO_LABEL={'麥高芬劇團':'💌 寫給我們（麥高芬）'};
 const ACCS=[
  {id:'scarf',n:'紅圍巾',need:3,e:'🧣'},{id:'hat',n:'郵差帽',need:6,e:'🧢'},
  {id:'bag',n:'信差包',need:9,e:'👜'},{id:'wreath',n:'花環',need:12,e:'🌸'},
@@ -663,7 +667,7 @@ const CONFIG={
   name:"收信快樂", season:"115學年度冬季公演", troupe:"麥高芬劇團",
   dates:"2026/12/12（六）・12/13（日）",
   ticketOpen:"11/08 開放索票",
-  venue:"",            // 場地（有填才會顯示）
+  venue:"政大傳院劇場", // 場地
   times:"",            // 場次時間（有填才會顯示），例如 "12/12 14:30、19:30　12/13 14:30"
   ticketUrl:"",        // 索票連結（有填才會出現按鈕）
   ig:"nccu_theater",   // 劇團 IG 帳號：完成證明上的抽獎說明、「前往 IG」按鈕都會用到
@@ -798,7 +802,7 @@ const Store=(()=>{
  const SEEDTS=Date.UTC(2026,9,1);
  const seeds=()=>SEEDS.map((s,i)=>Object.assign({kind:'public',seed:true,ts:SEEDTS+i*3600e3,arriveAt:0,uid:'seed'},s));
  S.send=async(o)=>{
-  const now=Date.now(),d=CONFIG.deliverySec,doc={uid:S.uid,to:o.to,by:o.by||'',paper:o.paper,ts:now,arriveAt:now+(d[0]+Math.random()*(d[1]-d[0]))*1000};
+  const now=Date.now(),d=CONFIG.deliverySec,doc={uid:S.uid,to:o.to,by:o.by||'',paper:o.paper,ts:now,fo:!!o.fo,arriveAt:now+(d[0]+Math.random()*(d[1]-d[0]))*1000};
   let col='m3_letters',id;
   if(o.code){
    col='m3_sealed';doc.kind='sealed';doc.ch=await hashCode(o.code);const e=await encrypt(o.text,o.code);doc.iv=e.iv;doc.ct=e.ct;doc.ac=await wrapCode(o.code);doc.text='';
@@ -896,7 +900,8 @@ const Snd=(()=>{
    case'stair': // 樓梯：略低、略重，仍然是軟底
     puff(t,.09,'lowpass',640+r*80,.5,.85,.005);thump(t,118*sd,66,.13,.36);break;
    default: puff(t,.08,'lowpass',900,.6,.7,.005);thump(t,130,80,.1,.25)}};
- A.play=(n)=>{
+ A.play=(n)=>{try{A._play(n)}catch(e){console.warn('snd',n,e)}}; // 音效出錯也不能影響遊戲
+ A._play=(n)=>{
   if(!ac||!sOn)return;const t=ac.currentTime+.01;
   switch(n){
   case'click':tone(660,t,.08,'triangle',.12);break;
@@ -914,14 +919,16 @@ const Snd=(()=>{
   case'pick':tone(500,t,.12,'sine',.2,0,900);noise(t,.08,2000,.08);break;
   case'tear':crinkle(t,34,.5,.13,2600);noise(t,.45,2200,.07,.5,'bandpass',1500);break;
   case'pop':tone(520,t,.12,'sine',.18,0,880);break;
-  case'meow':case'mew':{const sh=n==='mew',d=(sh?.32:.62)+Math.random()*.18,p0=(sh?640:500)+Math.random()*90;
-   const o=ac.createOscillator(),vib=ac.createOscillator(),vg=ac.createGain(),g=ac.createGain(),f1=ac.createBiquadFilter(),f2=ac.createBiquadFilter(),f2g=ac.createGain();
-   o.type='sawtooth';o.frequency.setValueAtTime(p0*.85,t);o.frequency.linearRampToValueAtTime(p0*1.3,t+d*.35);o.frequency.exponentialRampToValueAtTime(p0*.7,t+d);
-   vib.frequency.value=6.5;vg.gain.value=9;vib.connect(vg);vg.connect(o.frequency);
-   f1.type='bandpass';f1.Q.value=5;f1.frequency.setValueAtTime(450,t);f1.frequency.linearRampToValueAtTime(1000,t+d*.4);f1.frequency.linearRampToValueAtTime(420,t+d);  // 「咪—啊—嗚」的嘴形
-   f2.type='bandpass';f2.Q.value=7;f2.frequency.setValueAtTime(2600,t);f2.frequency.linearRampToValueAtTime(1600,t+d*.5);f2.frequency.linearRampToValueAtTime(950,t+d);f2g.gain.value=.55;
-   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.9,t+.05);g.gain.setValueAtTime(.8,t+d*.55);g.gain.linearRampToValueAtTime(0,t+d);
-   o.connect(f1);o.connect(f2);f2.connect(f2g);f1.connect(g);f2g.connect(g);g.connect(sfxG);o.start(t);vib.start(t);o.stop(t+d+.02);vib.stop(t+d+.02)}break;
+  case'meow':case'mew':{ // 溫柔的貓叫：柔和的音色、先往上再往下滑，帶一點點顫音
+   const sh=n==='mew',d=(sh?.42:.7)+Math.random()*.12,p0=(sh?720:560)+Math.random()*60;
+   const o=ac.createOscillator(),o2=ac.createOscillator(),vib=ac.createOscillator(),vg=ac.createGain(),g=ac.createGain(),g2=ac.createGain(),f=ac.createBiquadFilter();
+   o.type='sine';o2.type='triangle';[o,o2].forEach((q,i)=>{const m=i?2:1;q.frequency.setValueAtTime(p0*.9*m,t);q.frequency.linearRampToValueAtTime(p0*1.18*m,t+d*.3);q.frequency.exponentialRampToValueAtTime(p0*.78*m,t+d)});
+   vib.frequency.value=5.5;vg.gain.value=6;vib.connect(vg);vg.connect(o.frequency);
+   f.type='lowpass';f.Q.value=1.2;f.frequency.setValueAtTime(900,t);f.frequency.linearRampToValueAtTime(2200,t+d*.3);f.frequency.linearRampToValueAtTime(800,t+d);
+   g2.gain.value=.18;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.11,t+.07);g.gain.setValueAtTime(.1,t+d*.6);g.gain.exponentialRampToValueAtTime(.001,t+d);
+   o.connect(f);o2.connect(g2);g2.connect(f);f.connect(g);g.connect(sfxG);g.connect(rev||sfxG);[o,o2,vib].forEach(q=>{q.start(t);q.stop(t+d+.03)})}break;
+  case'paw':{const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();o.type='sine';o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(90,t+.09);f.type='lowpass';f.frequency.value=500; // 肉球：軟軟的「噗」
+   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(f);f.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.14)}break;
   case'hiss':noise(t,.35,3000,.08,.6,'highpass');tone(300,t,.12,'square',.04,0,180);break;
   case'purr':{const d=2.6,o=ac.createOscillator(),g=ac.createGain(),lf=ac.createOscillator(),lg=ac.createGain(),f=ac.createBiquadFilter();
    o.type='sawtooth';o.frequency.value=46;f.type='lowpass';f.frequency.value=240;lf.frequency.value=23;lg.gain.value=.06;
@@ -2219,7 +2226,7 @@ function setupInput(){
  addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
  let drag=null;
  cv.addEventListener('pointerdown',e=>{Snd.resume();if(Graf.on&&Graf.down(e)){cv.setPointerCapture(e.pointerId);return}drag={id:e.pointerId,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
- cv.addEventListener('pointermove',e=>{if(Graf.on&&Graf.move(e))return;if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(Eng.lock||cineCam)return;
+ cv.addEventListener('pointermove',e=>{if(Graf.on&&Graf.move(e))return;if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if((Eng.lock&&!Eng.camFree)||cineCam)return;
   Eng.yaw-=dx*.0052;Eng.pitch=clamp(Eng.pitch+dy*.0042*(Eng.fp?-1:1),Eng.fp?-1.45:-.55,Eng.fp?1.45:1.35)});
  let tap0=null;cv.addEventListener('pointerdown',e=>{tap0={x:e.clientX,y:e.clientY,t:performance.now()}});
  cv.addEventListener('pointerup',e=>{Graf.up(e);drag=null;if(tap0&&!Graf.on&&Math.hypot(e.clientX-tap0.x,e.clientY-tap0.y)<8&&performance.now()-tap0.t<400)clickPick(e);tap0=null});cv.addEventListener('pointercancel',e=>{Graf.up(e);drag=null});
@@ -2367,17 +2374,17 @@ function update(dt,t){
 const _cp=new T.Vector3(),_lk=new T.Vector3();
 function updateCamera(dt,t){
  if(cineCam){cineCam(t,dt);pl.obj.visible=camera.position.distanceTo(pl.obj.position)>1.8;lampsNearCam();return}
- const R=W.rooms[Eng.area],headY=pl.y+1.95,tgY=pl.y+1.6;
+ const R=W.rooms[Eng.area],headY=pl.y+1.95,F=Eng.focus,PX=F?F.x:pl.x,PZ=F?F.z:pl.z,tgY=F?F.y:pl.y+1.6; // focus：互動時改成看你和對象中間
  if(Eng.fp){
   camera.position.set(pl.x,headY,pl.z);pl.obj.visible=false;
   const cp=Math.cos(Eng.pitch);_lk.set(pl.x-Math.sin(Eng.yaw)*cp,headY+Math.sin(Eng.pitch),pl.z-Math.cos(Eng.yaw)*cp);camera.lookAt(_lk);return}
  let pit=Eng.pitch,dist=Eng.dist*(R.outdoor?1:.78);
  const cp=Math.cos(Math.max(pit,-.1)),sp_=Math.sin(Math.max(pit,-.1));
- let cx=pl.x+Math.sin(Eng.yaw)*cp*dist,cy=tgY+.4+sp_*dist,cz=pl.z+Math.cos(Eng.yaw)*cp*dist;
- const cb=R.camB;if(cb){const ox=R.ox||0,tx=pl.x,ty=tgY+.4,tz=pl.z,dx=cx-tx,dy=cy-ty,dz=cz-tz;
+ let cx=PX+Math.sin(Eng.yaw)*cp*dist,cy=tgY+.4+sp_*dist,cz=PZ+Math.cos(Eng.yaw)*cp*dist;
+ const cb=R.camB;if(cb){const ox=R.ox||0,tx=PX,ty=tgY+.4,tz=PZ,dx=cx-tx,dy=cy-ty,dz=cz-tz;
   const lim=(a0,a1,o,d)=>d>1e-4?(a1-o)/d:(d<-1e-4?(a0-o)/d:9);
   const t=clamp(Math.min(1,lim(cb.x0+ox,cb.x1+ox,tx,dx),lim(cb.z0,cb.z1,tz,dz),lim(-1e9,cb.y1,ty,dy)),0,1);cx=tx+dx*t;cy=ty+dy*t;cz=tz+dz*t}
- {const tx=pl.x,ty=tgY+.4,tz=pl.z;let tt=1;const dx=cx-tx,dz=cz-tz;
+ {const tx=PX,ty=tgY+.4,tz=PZ;let tt=1;const dx=cx-tx,dz=cz-tz;
   for(const c of W.cols){
    if(c.tree&&(c.room||'world')===Eng.area){const ox=tx-c.x,oz=tz-c.z,a=dx*dx+dz*dz,b=2*(ox*dx+oz*dz),cc=ox*ox+oz*oz-c.cr*c.cr,ds=b*b-4*a*cc;
     if(a>1e-6&&ds>0){const t0=(-b-Math.sqrt(ds))/(2*a);if(t0>0&&t0<tt){const yy=ty+(cy-ty)*t0;if(yy<c.top+.5&&yy>1.2)tt=t0}}continue}
@@ -2392,7 +2399,7 @@ function updateCamera(dt,t){
  pl.obj.visible=dd>1.7&&!Eng.hidePlayer;
  camera.position.lerp(_cp.set(cx,cy,cz),Math.min(1,dt*(Eng.snapCam?60:9)));Eng.snapCam=false;
  // 往上看天空：pit<0 時視線上抬
- const up=Math.max(0,-pit)*14;_lk.set(pl.x,tgY+up+(dd<1.7?0:0),pl.z);
+ const up=Math.max(0,-pit)*14;_lk.set(PX,tgY+up-(F&&F.dy||0),PZ);
  if(dd<1.7){_lk.set(pl.x-Math.sin(Eng.yaw)*3,headY+Math.sin(-pit*.6)*2,pl.z-Math.cos(Eng.yaw)*3)}
  camera.lookAt(_lk);lampsNearCam();fadeXmas(dt);Cafe.tick(dt);Achi.tick(dt,t)}
 const _sv=new T.Vector3();let _ray=null;
@@ -2524,9 +2531,23 @@ function openSettings(){
   const a0=m.querySelector('#a0');if(a0)a0.onclick=async()=>{try{await Store.login(m.querySelector('#ae').value.trim(),m.querySelector('#ap').value);Modal.close();toast('管理員已登入');openSettings()}catch(e){m.querySelector('#aw').textContent='登入失敗：'+(e.message||e)}};
   const a1=m.querySelector('#a1');if(a1)a1.onclick=()=>{Modal.close();openAdmin()};const a2=m.querySelector('#a2');if(a2)a2.onclick=async()=>{await Store.logout();Modal.close();toast('已登出')}})}
 async function openAdmin(){
- Modal.open(`<h2>管理全部信件</h2><p class="d">${esc(CONFIG.adminHint)}</p><div id="al">載入中…</div>`,async m=>{
+ Modal.open(`<h2>管理全部信件</h2><p class="d">${esc(CONFIG.adminHint)}</p><div class="row"><button class="btn sm" id="fohp">🖨️ 印出「寫給麥高芬」的信（前台佈置用）</button></div><div id="al">載入中…</div>`,async m=>{
+  m.querySelector('#fohp').onclick=()=>printTroupeLetters();
   try{const rows=await Store.adminAll();m.querySelector('#al').innerHTML=rows.map(r=>`<div class="lcard ${r.kind==='sealed'?'lock':''}" data-id="${r.id}" style="margin-bottom:6px"><span class="m">${r.kind==='sealed'?'🔒 加密 · 代碼 '+esc(r._code||'？'):'公開'} · 給 ${esc(r.to)} · ${esc(r.by||'匿名')} · ${fmtD(r.ts)}</span><span class="pv" style="max-height:none">${esc(r.text)}</span><button class="btn sm ghost" data-del="${r.id}" style="margin-top:4px">刪除</button></div>`).join('')||'沒有信件';
    m.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{const r=rows.find(x=>x.id===b.dataset.del);if(!confirm('刪除這封信？'))return;try{await Store.remove(r);b.closest('.lcard').remove();toast('已刪除')}catch(e){toast('刪除失敗')}})}catch(e){m.querySelector('#al').textContent='讀取失敗：'+e.message}})}
+/* ---- 前台佈置：把寫給麥高芬、同意公開的信排成可列印的信紙 ---- */
+async function printTroupeLetters(){
+ let rows=[];try{rows=(await Store.list('m3_letters',{where:['to','麥高芬劇團']})).filter(r=>r.fo!==false&&!isBad(r.text)).sort((a,b)=>a.ts-b.ts)}catch(e){toast('讀取失敗：'+(e.message||e));return}
+ if(!rows.length){toast('還沒有寫給麥高芬的信');return}
+ const w=open('','_blank');if(!w){toast('請允許彈出視窗');return}
+ const PC=['#fbf6ea','#fbe9ea','#eaf1f7','#f1f5e6','#2f3a68'];
+ w.document.write(`<!doctype html><meta charset="utf-8"><title>寫給麥高芬的信（${rows.length} 封）</title><style>
+ body{margin:0;font-family:"Noto Serif TC",serif;background:#eee}.pg{display:grid;grid-template-columns:1fr 1fr;gap:10mm;padding:10mm}
+ .l{background:#fbf6ea;border:1px solid #cdb994;border-radius:4px;padding:10mm;min-height:110mm;break-inside:avoid;page-break-inside:avoid;position:relative;color:#4a3a2c;background-image:repeating-linear-gradient(transparent 0 9mm,#e3d5b8 9mm calc(9mm + 1px))}
+ .l h3{margin:0 0 4mm;font-weight:400;color:#c0523f}.l p{white-space:pre-wrap;line-height:9mm;margin:0;font-size:13pt}.l .by{text-align:right;margin-top:4mm}.l .s{position:absolute;right:8mm;top:6mm;font-size:9pt;color:#a08a6d}
+ .l.d{color:#f4ead5;background-color:#2f3a68}@media print{body{background:#fff}.np{display:none}}</style>
+ <p class="np" style="padding:6mm 10mm">共 ${rows.length} 封。用瀏覽器的「列印」印出（建議 A4、直式）。</p><div class="pg">${rows.map(r=>`<div class="l ${r.paper===4?'d':''}" style="background-color:${PC[r.paper%5]||PC[0]}"><span class="s">${fmtD(r.ts).slice(0,10)}</span><h3>給 麥高芬：</h3><p>${esc(r.text)}</p><div class="by">— ${esc(r.by||'一位路過收信小鎮的人')}</div></div>`).join('')}</div>`);
+ w.document.close()}
 /* ---- 票根護照 ---- */
 function makePassport(){
  const c=mkc(1080,1440),x=c.getContext('2d');x.fillStyle='#f4ead5';x.fillRect(0,0,1080,1440);x.strokeStyle='#c0523f';x.lineWidth=8;x.strokeRect(24,24,1032,1392);x.setLineDash([14,10]);x.lineWidth=3;x.strokeRect(44,44,992,1352);x.setLineDash([]);
@@ -2555,17 +2576,19 @@ function openWrite(pre={}){
  <div class="pp" id="pps"></div>
  <div class="paper p${paper}" id="pap"><div class="to" id="toL">給 ${esc(pre.to||TO_OPTS[0])}：</div><textarea class="lt" id="lt" maxlength="400" placeholder="在這裡寫下想說的話……">${esc(draft)}</textarea><div class="by" id="byL"></div></div>
  <div class="cnt"><span id="wc">0 / 400</span><span class="warn" id="wn"></span></div>
- <div class="lab" style="margin-top:8px">寫給</div><div class="row" id="tos">${TO_OPTS.map(t=>`<button class="chip ${t===(pre.to||TO_OPTS[0])?'on':''}" data-to="${esc(t)}">${t}</button>`).join('')}<input class="txt" id="toc" placeholder="或自己填（例：小明）" maxlength="12" style="max-width:190px"></div>
+ <div class="lab" style="margin-top:8px">寫給</div><div class="row" id="tos">${TO_OPTS.map(t=>`<button class="chip ${t===(pre.to||TO_OPTS[0])?'on':''}" data-to="${esc(t)}">${TO_LABEL[t]||t}</button>`).join('')}<input class="txt" id="toc" placeholder="或自己填（例：小明）" maxlength="12" style="max-width:190px"></div>
+ <div class="tiny hide" id="mgfn" style="background:#fbf3df;border:1px dashed var(--red);border-radius:8px;padding:8px 10px;margin:6px 0">寫給麥高芬的信，會在 12/12、12/13 演出時印出來，佈置在傳院劇場的前台，讓來看戲的人也讀得到。<label style="display:block;margin-top:4px"><input type="checkbox" id="fo" checked> 我同意這封信被印出來佈置在前台</label></div>
  <div class="row"><input class="txt" id="by" placeholder="署名（可留空＝匿名）" maxlength="10" style="max-width:260px"></div>
  <div class="row"><label class="sw2"><input type="checkbox" id="sl"> 🔒 加密信件（只有知道代碼的人讀得到）</label></div>
  <div class="row hide" id="cr"><input class="txt" id="code" inputmode="numeric" maxlength="5" placeholder="5 位數代碼" style="max-width:140px;text-align:center;letter-spacing:.3em"><button class="btn sm ghost" id="rc">隨機</button></div>
  <div class="tiny hide" id="cn">請記住代碼，並私下告訴收信人。管理員可以不用代碼閱讀（用於維護）。</div>
  <div class="row"><button class="btn" id="send">投入郵筒</button></div>`,m=>{
   const lt=m.querySelector('#lt'),pap=m.querySelector('#pap');let to=pre.to||TO_OPTS[0];
+  const mgf=()=>{const on=to==='麥高芬劇團';m.querySelector('#mgfn').classList.toggle('hide',!on);if(on){m.querySelector('#sl').checked=false;m.querySelector('#sl').onchange&&m.querySelector('#sl').onchange({target:{checked:false}})}m.querySelector('#sl').closest('.row').classList.toggle('hide',on)};setTimeout(mgf,0);
   paperBtns(m.querySelector('#pps'),paper,i=>{paper=i;pap.className='paper p'+i;localStorage.setItem('mgf3d_paper',i)});
   const cnt=()=>{m.querySelector('#wc').textContent=lt.value.length+' / 400';localStorage.setItem('mgf3d_draft',lt.value)};lt.oninput=cnt;cnt();
-  m.querySelectorAll('[data-to]').forEach(b=>b.onclick=()=>{m.querySelectorAll('[data-to]').forEach(x=>x.classList.remove('on'));b.classList.add('on');to=b.dataset.to;m.querySelector('#toc').value='';m.querySelector('#toL').textContent='給 '+to+'：'});
-  m.querySelector('#toc').oninput=e=>{const v=e.target.value.trim();if(v){m.querySelectorAll('[data-to]').forEach(x=>x.classList.remove('on'));to=v}else{to=TO_OPTS[0]}m.querySelector('#toL').textContent='給 '+to+'：'};
+  m.querySelectorAll('[data-to]').forEach(b=>b.onclick=()=>{m.querySelectorAll('[data-to]').forEach(x=>x.classList.remove('on'));b.classList.add('on');to=b.dataset.to;m.querySelector('#toc').value='';m.querySelector('#toL').textContent='給 '+to+'：';mgf()});
+  m.querySelector('#toc').oninput=e=>{const v=e.target.value.trim();if(v){m.querySelectorAll('[data-to]').forEach(x=>x.classList.remove('on'));to=v}else{to=TO_OPTS[0]}m.querySelector('#toL').textContent='給 '+to+'：';mgf()};
   m.querySelector('#by').oninput=e=>{m.querySelector('#byL').textContent=e.target.value.trim()?'— '+e.target.value.trim():''};
   m.querySelector('#sl').onchange=e=>{sealed=e.target.checked;m.querySelector('#cr').classList.toggle('hide',!sealed);m.querySelector('#cn').classList.toggle('hide',!sealed);if(sealed&&!m.querySelector('#code').value)m.querySelector('#code').value=String(Math.floor(Math.random()*90000)+10000)};
   m.querySelector('#rc').onclick=()=>m.querySelector('#code').value=String(Math.floor(Math.random()*90000)+10000);
@@ -2577,7 +2600,7 @@ function openWrite(pre={}){
    if(sealed&&!Store.canCrypto){wn.textContent='這個環境不支援加密，請改用公開信。';return}
    const btn=m.querySelector('#send');btn.disabled=true;btn.textContent='寄送中…';
    try{
-    const doc=await Store.send({to,by,text,paper,code:sealed?code:''});
+    const doc=await Store.send({to,by,text,paper,code:sealed?code:'',fo:to==='麥高芬劇團'&&m.querySelector('#fo').checked});
     localStorage.removeItem('mgf3d_draft');
     if(sealed){P.codes[doc.id]=code}
     P.sent++;Store.saveP(P);
@@ -3360,13 +3383,35 @@ function drawRedeem(){
  x.fillStyle='#4a3a2c';x.font='28px '+SANS;x.fillText('截圖這張完成證明留念，也分享給朋友吧',450,1124);
  x.fillStyle='#8a6a52';x.font='24px '+SANS;x.fillText(`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}　${CONFIG.show.troupe}《${CONFIG.show.name}》`,450,1196);
  return c}
+/* ---- IG 限時動態：9:16 直式圖（完成證明＋劇團帳號＋演出資訊）---- */
+function drawStory(){
+ const c=mkc(1080,1920),x=c.getContext('2d'),S=CONFIG.show,SERIF='"Cactus Classical Serif","Noto Serif TC",serif',SANS='"Chocolate Classical Sans","Noto Sans TC",sans-serif';
+ const g=x.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#2b2148');g.addColorStop(.55,'#4a2f4f');g.addColorStop(1,'#c0523f');x.fillStyle=g;x.fillRect(0,0,1080,1920);
+ const r=rng(7);for(let i=0;i<140;i++){x.globalAlpha=.25+r()*.6;x.fillStyle='#fff';x.beginPath();x.arc(r()*1080,r()*900,1+r()*2.4,0,TAU);x.fill()}x.globalAlpha=1;
+ x.textAlign='center';x.fillStyle='#ffd98a';x.font='44px '+SANS;x.fillText(`${S.troupe}　${S.season}`,540,170);
+ x.fillStyle='#fbf3df';x.font='bold 120px '+SERIF;x.fillText(`《${S.name}》`,540,320);
+ x.font='40px '+SANS;x.fillStyle='#f4ead5';x.fillText(`「${THEME.a}」`,540,400);
+ const card=drawRedeem();x.save();x.translate(540,1010);x.rotate(-.035);x.shadowColor='rgba(0,0,0,.45)';x.shadowBlur=40;x.shadowOffsetY=16;x.drawImage(card,-405,-567,810,1134);x.restore();
+ x.fillStyle='rgba(20,12,24,.55)';x.fillRect(0,1640,1080,280);
+ x.fillStyle='#fbf3df';x.font='bold 50px '+SANS;x.fillText(S.dates,540,1720);
+ x.font='40px '+SANS;x.fillText((S.venue||'政大傳院劇場')+'　'+(S.ticketOpen||''),540,1782);
+ x.fillStyle='#ffd98a';x.font='bold 48px '+SANS;x.fillText('@'+S.ig,540,1860);
+ return c}
+const storyCaption=()=>{const S=CONFIG.show;return `我在「收信小鎮」集滿 12 張郵票了 ✉️\n${S.troupe}《${S.name}》\n${S.dates}　${S.venue||'政大傳院劇場'}\n@${S.ig}\n${location.href.split('#')[0]}`};
+async function shareStory(){
+ const c=drawStory(),cap=storyCaption();try{await navigator.clipboard.writeText(cap)}catch(e){}
+ const blob=await new Promise(r=>c.toBlob(r,'image/png'));const f=new File([blob],'收信快樂-限時動態.png',{type:'image/png'});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'收信快樂',text:cap});toast('在分享選單裡選 Instagram → 限時動態；文字已複製，可以直接貼上');return}catch(e){if(e&&e.name==='AbortError')return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='收信快樂-限時動態.png';a.click();
+ Modal.open(`<h2>分享到 IG 限時動態</h2><p class="d">圖片已經下載了（9:16 直式，剛好是限時動態的大小）。</p><ol class="d" style="text-align:left;line-height:1.9"><li>用手機打開 Instagram，新增限時動態，選這張圖</li><li>標註 <b>@${esc(CONFIG.show.ig)}</b>，讓我們看到你</li><li>文字已經幫你複製好了，可以直接貼上</li></ol><div style="text-align:center"><img src="${c.toDataURL('image/jpeg',.8)}" style="width:min(220px,60%);border-radius:10px;border:2px solid var(--ink)"></div><div class="row" style="margin-top:8px"><a class="btn sm" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(CONFIG.show.ig)}/" style="text-decoration:none">前往 IG</a></div>`)}
 function openRedeem(){
  const n=P.stamps.length,ig=esc(CONFIG.show.ig);
  if(n<12){Modal.open(`<h2>完成證明</h2><p class="d">在小鎮裡集滿 12 張郵票，就能拿到完成證明。<br>之後到 IG <b>@${ig}</b> 的抽獎貼文底下留言並標記我們，就能參加抽獎。</p><p class="d">目前郵票：${n} / 12</p><div class="row"><button class="btn sm" id="ra">打開郵票冊</button></div>`,m=>{m.querySelector('#ra').onclick=()=>{Modal.close();openAlbum()}});return}
  const c=drawRedeem();
  Modal.open(`<h2>🎉 小鎮的回禮</h2><p class="d">「${esc(THEME.a)}。」<br>謝謝你，把這座小鎮走過一遍。截圖下面這張完成證明留念，再到 IG <b>@${ig}</b> 的抽獎貼文底下留言並標記我們，就能參加抽獎。</p>
  <div style="text-align:center"><img id="rimg" src="${c.toDataURL('image/png')}" style="width:min(300px,80%);border-radius:8px;border:2px solid var(--ink)"></div>
- <div class="row" style="margin-top:10px"><a class="btn sm" target="_blank" rel="noopener" href="https://www.instagram.com/${ig}/" style="text-decoration:none">前往 IG</a><button class="btn sm ghost" id="rsv">儲存圖片</button></div>`,m=>{
+ <div class="row" style="margin-top:10px"><button class="btn" id="rst">📸 分享到 IG 限時動態</button></div><div class="row"><a class="btn sm ghost" target="_blank" rel="noopener" href="https://www.instagram.com/${ig}/" style="text-decoration:none">前往 IG</a><button class="btn sm ghost" id="rsv">儲存圖片</button></div>`,m=>{
+  m.querySelector('#rst').onclick=()=>shareStory();
   m.querySelector('#rsv').onclick=()=>c.toBlob(async b=>{const f=new File([b],'收信快樂-完成證明.png',{type:'image/png'});
    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'收信快樂 完成證明'});return}catch(e){}}
    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='收信快樂-完成證明.png';a.click();toast('已儲存，記得到 IG 抽獎貼文留言')})})}
@@ -3376,6 +3421,7 @@ function openRedeem(){
 const Soc={on:false,local:false,started:false,peers:{},pub:[],dm:{},tab:'pub',cur:null,open:false,unreadPub:0,unreadDm:0,lastSend:0,lastPres:0,lastPos:[0,0,''],t0:Date.now(),seen:new Set(),els:{},
  fs(){return Store.fs&&Store.fs()},
  colorOf(n){let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return`hsl(${h%360},45%,36%)`},
+ whenStr(ts){const d=new Date(ts),n=new Date();return(d.toDateString()===n.toDateString()?'':(d.getMonth()+1)+'/'+d.getDate()+' ')+Soc.timeStr(ts)},
  timeStr(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')},
  init(){
   if(Soc.started)return;Soc.started=true;
@@ -3391,16 +3437,16 @@ const Soc={on:false,local:false,started:false,peers:{},pub:[],dm:{},tab:'pub',cu
   const sb=document.createElement('div');sb.id='sayb';sb.innerHTML='<input id="sayi" maxlength="40" autocomplete="off" placeholder="對大家說一句話（Enter 送出）">';document.body.appendChild(sb);Soc.sayb=sb;
   const si=$('sayi');si.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();Soc.say(si.value);si.value='';si.blur()}else if(e.key==='Escape'){si.blur()}});
   addEventListener('keydown',e=>{if(e.key==='Enter'&&P.started&&!Modal.on&&!Dlg.on&&!cineCam&&document.activeElement!==si&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){e.preventDefault();si.focus()}});
-  setInterval(()=>{sb.style.display=(P.started&&!Soc.open&&!Modal.on&&!document.getElementById('gm'))?'block':'none'},400);
+  setInterval(()=>{sb.style.display=(P.started&&!Soc.open&&!Modal.on&&!Dlg.on&&!Cafe.seat&&!Achi.busy&&!document.getElementById('gm'))?'block':'none';document.body.classList.toggle('seated',!!Cafe.seat);document.body.classList.toggle('catting',!!Achi.busy)},300);
   // 點玩家
   const cv=$('gl');let d0=null;cv.addEventListener('pointerdown',e=>{d0={x:e.clientX,y:e.clientY,t:performance.now()}});
   cv.addEventListener('pointerup',e=>{if(d0&&Math.hypot(e.clientX-d0.x,e.clientY-d0.y)<8&&performance.now()-d0.t<400)Soc.pick(e.clientX,e.clientY);d0=null});
   const fs=Soc.fs();
-  if(!fs){Soc.local=true;Soc.render();return}
+  if(!fs){Soc.local=true;try{Soc.pub=JSON.parse(localStorage.getItem('mgf3d_chat')||'[]').filter(x=>x.ts>Date.now()-3*864e5)}catch(e){}Soc.render();return}
   Soc.on=true;const uid=Store.uid,now=Date.now();
   const err=e=>console.warn('soc',e&&e.message);
   fs.collection('m3_pres').where('ts','>',now-120000).onSnapshot(sn=>sn.docChanges().forEach(c=>{const d=c.doc.data(),id=c.doc.id;if(id===uid)return;if(c.type==='removed'||d.off){Soc.drop(id);return}Soc.upsert(id,d)}),err);
-  fs.collection('m3_chat').where('ts','>',now-900000).onSnapshot(sn=>sn.docChanges().forEach(c=>{if(c.type!=='added'||Soc.seen.has(c.doc.id))return;Soc.seen.add(c.doc.id);Soc.onPub(Object.assign({id:c.doc.id},c.doc.data()))}),err);
+  fs.collection('m3_chat').where('ts','>',now-3*864e5).orderBy('ts').limitToLast(200).onSnapshot(sn=>sn.docChanges().forEach(c=>{if(c.type!=='added'||Soc.seen.has(c.doc.id))return;Soc.seen.add(c.doc.id);Soc.onPub(Object.assign({id:c.doc.id},c.doc.data()))}),err);
   const dmq=q=>q.onSnapshot(sn=>sn.docChanges().forEach(c=>{if(c.type!=='added'||Soc.seen.has(c.doc.id))return;Soc.seen.add(c.doc.id);Soc.onDm(Object.assign({id:c.doc.id},c.doc.data()))}),err);
   dmq(fs.collection('m3_dm').where('to','==',uid));dmq(fs.collection('m3_dm').where('uid','==',uid));
   addEventListener('pagehide',()=>{try{fs.collection('m3_pres').doc(uid).set({off:true,ts:Date.now()})}catch(e){}});
@@ -3463,10 +3509,10 @@ const Soc={on:false,local:false,started:false,peers:{},pub:[],dm:{},tab:'pub',cu
   const p=Soc.peers[to];toast((act==='wave'?'👋 你對 ':'🌸 你送花給 ')+(p?p.name:'對方'));Snd.play('pop');pl.obj.userData.wave=1.6;qdone('talk')},
  /* ---- 訊息 ---- */
  say(t){t=String(t||'').trim().slice(0,40);if(!t)return;if(isBad(t)){toast('這句話不太適合送出');return}
-  if(!Soc.on){Soc.feed({name:P.name,text:t,uid:Store.uid});say2(t);return}
+  if(!Soc.on){const m={name:P.name,text:t,uid:Store.uid,ts:Date.now()};Soc.feed(m);say2(t);Soc.pub.push(m);try{const L=JSON.parse(localStorage.getItem('mgf3d_chat')||'[]').filter(x=>x.ts>Date.now()-3*864e5);L.push(m);localStorage.setItem('mgf3d_chat',JSON.stringify(L.slice(-200)))}catch(e){}return}
   const now=Date.now();if(now-Soc.lastSend<1200){toast('慢一點喔');return}Soc.lastSend=now;
   Soc.fs().collection('m3_chat').add({uid:Store.uid,name:P.name,text:t,a:Eng.area,ts:now}).catch(()=>toast('送不出去，稍後再試'));qdone('talk')},
- feed(m){if(m.e)return;const f=Soc.feedEl;if(!f)return;const d=document.createElement('div');d.className='fm';d.innerHTML='<b style="color:'+Soc.colorOf(m.name)+'">'+esc(m.name)+'</b> '+esc(m.text);f.appendChild(d);while(f.children.length>5)f.firstChild.remove();setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),900)},11000)},
+ feed(m){if(m.e)return;const f=Soc.feedEl;if(!f)return;const d=document.createElement('div');d.className='fm';d.innerHTML='<b style="color:'+Soc.colorOf(m.name)+'">'+esc(m.name)+'</b> '+esc(m.text)+'<span class="ft">'+Soc.timeStr(m.ts||Date.now())+'</span>';f.appendChild(d);while(f.children.length>5)f.firstChild.remove();setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),900)},30000)},
  onPub(m){
   if(m.ts>Soc.t0-4000)Soc.feed(m);
   Soc.pub.push(m);if(Soc.pub.length>120)Soc.pub.shift();
@@ -3499,8 +3545,8 @@ const Soc={on:false,local:false,started:false,peers:{},pub:[],dm:{},tab:'pub',cu
   const fi=$('chi');fi.style.display=Soc.tab==='on'||(Soc.tab==='dm'&&!Soc.cur)?'none':'';$('chs').style.display=fi.style.display;
   fi.placeholder=Soc.tab==='dm'&&Soc.cur?'私訊 '+((Soc.dm[Soc.cur]&&Soc.dm[Soc.cur].name)||(Soc.peers[Soc.cur]&&Soc.peers[Soc.cur].name)||'對方'):'說點什麼…';
   let h='';
-  if(Soc.local)h='<p class="tiny" style="padding:12px">目前沒有連上網路資料庫（單機模式），看不到其他玩家。</p>';
-  else if(Soc.tab==='pub'){h=Soc.pub.length?Soc.pub.map(m=>`<div class="cm"><b style="color:${Soc.colorOf(m.name)}">${esc(m.name)}</b> ${esc(m.text)}<span class="t">${Soc.timeStr(m.ts)}</span></div>`).join(''):'<p class="tiny" style="padding:12px">還沒有人說話。你可以先說一句，或點右下角的 💬 打招呼。</p>'}
+  if(Soc.local&&Soc.tab!=='pub')h='<p class="tiny" style="padding:12px">目前沒有連上網路資料庫（單機模式），看不到其他玩家。</p>';
+  else if(Soc.tab==='pub'){const ms=Soc.pub.filter(m=>!m.e);h=ms.length?'<p class="tiny" style="padding:6px 10px;margin:0">大家說過的話會保留 3 天（想留得更久，可以去海邊的留言板）</p>'+ms.map(m=>`<div class="cm"><b style="color:${Soc.colorOf(m.name)}">${esc(m.name)}</b> ${esc(m.text)}<span class="t">${Soc.whenStr(m.ts)}</span></div>`).join(''):'<p class="tiny" style="padding:12px">還沒有人說話。你可以先說一句，或點右下角的 💬 打招呼。</p>'}
   else if(Soc.tab==='on'){const ps=Object.values(Soc.peers);h=`<div class="cm"><b>${esc(P.name)}</b>（你）</div>`+ps.map(p=>`<div class="cm pl" data-id="${p.id}"><b style="color:${Soc.colorOf(p.name)}">${esc(p.name)}</b> <span class="t" style="float:none;margin-left:6px">${esc((AREA_NAME[p.a]||[''])[0])}</span></div>`).join('')+(ps.length?'':'<p class="tiny" style="padding:12px">現在只有你一個人。等等看，或約朋友一起進來。</p>')}
   else if(!Soc.cur){const ts=Object.entries(Soc.dm).sort((a,c)=>(c[1].last||0)-(a[1].last||0));h=ts.length?ts.map(([id,t])=>{const l=t.msgs.filter(m=>m.k!=='act').slice(-1)[0];return`<div class="cm pl" data-dm="${id}"><b style="color:${Soc.colorOf(t.name)}">${esc(t.name)}</b> ${t.unread?'<span class="nb">'+t.unread+'</span>':''}<span class="t" style="float:none;margin-left:6px">${l?esc(l.text.slice(0,14)):''}</span></div>`}).join(''):'<p class="tiny" style="padding:12px">點「在線」裡的人，或直接點畫面上的玩家，就可以私訊他。</p>'}
   else{const t=Soc.dm[Soc.cur],nm=t?t.name:(Soc.peers[Soc.cur]?Soc.peers[Soc.cur].name:'對方');h=`<div class="cm"><button class="chip" id="chback">←</button> <b>${esc(nm)}</b> <button class="chip" data-q="wave">👋</button><button class="chip" data-q="flower">🌸</button></div>`+(t?t.msgs.filter(m=>m.k!=='act').map(m=>`<div class="cm ${m.uid===Store.uid?'me':''}"><b style="color:${Soc.colorOf(m.name)}">${m.uid===Store.uid?'我':esc(m.name)}</b> ${esc(m.text)}<span class="t">${Soc.timeStr(m.ts)}</span></div>`).join(''):'')}
@@ -3553,7 +3599,7 @@ const Cafe={seat:null,prop:null,steam:[],cup:null,
   const c=Cafe.cup,n=(P.cups||[]).length,T={hot:'🔥 熱的',warm:'🌤️ 溫的',cool:'🧊 涼了'}[Cafe.temp()]||'';
   u.innerHTML=c?`<div class="t">${CAFE_ITEMS[c.k].e} ${T}　・　還剩 ${3-c.sips} 口　・　喝到杯底，看看杯底寫了什麼</div><button data-k="sip">${c.k==='snack'?'🍪 吃一口':'😋 喝一口'}</button><button data-k="talk">💬 聊天話題</button><button data-k="cups">📜 杯底的話 ${n}/8</button><button class="up" data-k="up">🚶 起身</button>`
    :`<div class="t">從包包裡拿點什麼出來吧。（傳院大廳沒有插座，熱的都裝在保溫瓶裡——而熱的東西，不會一直是熱的。）</div>${Object.entries(CAFE_ITEMS).map(([k,v])=>`<button data-k="${k}">${v.e} ${v.n}</button>`).join('')}<button data-k="talk">💬 聊天話題</button><button data-k="cups">📜 杯底的話 ${n}/8</button><button class="up" data-k="up">🚶 起身</button>`;
-  u.querySelectorAll('button').forEach(b=>b.onclick=()=>{Snd.resume();const k=b.dataset.k;if(k==='up')Cafe.stand();else if(k==='talk')Cafe.talk();else if(k==='sip')Cafe.sip();else if(k==='cups')Cafe.book();else Cafe.order(k)})},
+  u.querySelectorAll('button').forEach(b=>b.onclick=()=>{Snd.resume();if(Eng.lock)return;const k=b.dataset.k;if(k==='up')Cafe.stand();else if(k==='talk')Cafe.talk();else if(k==='sip')Cafe.sip();else if(k==='cups')Cafe.book();else Cafe.order(k)})},
  order(k){
   const s=Cafe.seat;if(!s)return;Cafe.clear();Snd.play('pop');
   const g=new T.Group(),dx=Math.sin(s.ry),dz=Math.cos(s.ry);g.position.set(s.x+dx*(s.top>1?.78:.5),s.top,s.z+dz*(s.top>1?.78:.5));g.rotation.y=s.ry;
@@ -3595,7 +3641,7 @@ const Cafe={seat:null,prop:null,steam:[],cup:null,
   if(Soc.on){Soc.tab='pub';Soc.toggle(true);setTimeout(()=>{const i=$('chi');if(i){i.value=tp;i.focus()}},80)}else toast('話題：'+tp)},
  tick(dt){
   if(Cafe.seat){if(Eng.area!=='hall'){Cafe.seat=null;Eng.sit=false;Eng.sitDy=null;pl.obj.userData.sitting=false;Cafe.clear();const u=$('cafe');if(u)u.remove();return}
-   const mv=keys.w||keys.a||keys.s||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright||Math.hypot(joy.x,joy.y)>.4;if(mv&&!Modal.on&&!Dlg.on&&!Soc.open){Cafe.stand();return}
+   const mv=keys.w||keys.a||keys.s||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright||Math.hypot(joy.x,joy.y)>.4;if(mv&&!Modal.on&&!Dlg.on&&!Soc.open&&!Eng.lock&&document.activeElement.tagName!=='INPUT'){Cafe.stand();return}
    const tp=Cafe.temp();if(Cafe.cup&&tp!==Cafe.cup.lastT){Cafe.cup.lastT=tp;Cafe.ui()}}
   const tp=Cafe.temp(),k=tp==='hot'?1:tp==='warm'?.45:0,empty=Cafe.cup&&Cafe.cup.sips>=3;
   for(const q of Cafe.steam){q.p=(q.p+dt*.45)%1;q.s.position.y=.15+q.p*.35;q.s.position.x=Math.sin(q.p*6+q.s.id)*.02;q.s.material.opacity=empty?0:Math.sin(q.p*PI)*.55*k;const sc=.1+q.p*.14;q.s.scale.set(sc,sc,1)}}};
@@ -3619,10 +3665,11 @@ function makeCat(){
   const hl=new T.Mesh(new T.SphereGeometry(.018,6,5),new T.MeshBasicMaterial({color:'#fff'}));hl.position.set(-.025,.04,.04);e.add(hl);return e});
  const lids=[-1,1].map(s=>{const l=new T.Mesh(new T.TorusGeometry(.06,.012,4,10,PI),new T.MeshBasicMaterial({color:'#5a5560'}));l.position.set(s*.125,.03,.29);l.rotation.z=PI;l.visible=false;head.add(l);return l});
  mk(S(.032,1.3,.8,.6),'#e79aa8',0,-.05,.31,false,head);
+ const mouth=mk(S(.045,1.2,.8,.4),'#7a3a44',0,-.13,.29,false,head);mouth.scale.y=.01;
  for(const s of[-1,1])for(const k of[-1,1]){const w=new T.Mesh(new T.CylinderGeometry(.004,.004,.32,3),new T.MeshBasicMaterial({color:'#8a8590'}));w.rotation.z=PI/2+k*.12*s;w.position.set(s*.22,-.08+k*.025,.26);head.add(w)}
  const tail=new T.Group();tail.position.set(0,.42,-.58);inner.add(tail);const tseg=[];
  for(let i=0;i<6;i++){const q=mk(new T.SphereGeometry(.085-i*.006,10,8),BK,0,i*.11,-i*.03,true,tail);tseg.push(q)}
- g.userData={inner,body,head,eyes,lids,legs,tail,tseg,ph:0};return g}
+ g.userData={inner,body,head,eyes,lids,legs,tail,tseg,mouth,ph:0};return g}
 const ACHI_SPOTS={
  campus:[[30.5,-15,1],[10,-14],[-40,-21],[-46,-8],[-20,20],[0,30],[-30,10]],
  hall:[[434,-8],[446,12],[429,0],[450,-3],[440,20],[449,-22],[436,-20]],
@@ -3648,7 +3695,7 @@ const Achi={obj:null,s:null,away:0,tip:null,
   if(!here){Achi.away+=dt;if(Achi.away>100){Achi.away=0;if(Math.random()<.55){Achi.relocate('campus');s.mode='sleep';s.timer=40}else{const ks=Object.keys(ACHI_SPOTS);Achi.relocate(ks[(Math.random()*ks.length)|0])}}return}
   const dp=Math.hypot(pl.x-s.x,pl.z-s.z);let spd=0;
   // 對話被直接關掉（例如按 Esc）時，結束互動、把鏡頭還給玩家
-  if(Achi.busy&&!Dlg.on&&!Achi.anim){Achi.idleT=(Achi.idleT||0)+dt;if(Achi.idleT>.4){Achi.idleT=0;Achi.end()}}else Achi.idleT=0;
+  if(Achi.busy&&!Dlg.on&&!Achi.anim&&!Modal.on){Achi.idleT=(Achi.idleT||0)+dt;if(Achi.idleT>.4){Achi.idleT=0;Achi.end()}}else Achi.idleT=0;
   if(Achi.busy){spd=s.animSpd||0}else{
   if(s.follow>0){s.follow-=dt;if(dp>1.8){s.tx=pl.x-Math.sin(pl.ry)*1.3;s.tz=pl.z-Math.cos(pl.ry)*1.3;s.mode='walk'}else if(s.mode==='walk'){s.mode='sit';s.timer=2}}
   if(s.mode==='walk'){const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz);spd=s.follow>0?(dp>4?4.2:2.4):1.1;
@@ -3659,7 +3706,7 @@ const Achi={obj:null,s:null,away:0,tip:null,
     if(r<.45){for(let k=0;k<8;k++){const an=Math.random()*TAU,rr=Math.random()*s.anchor.r,x=s.anchor.x+Math.cos(an)*rr,z=s.anchor.z+Math.sin(an)*rr;if(Achi.ok(s.area,x,z)){s.tx=x;s.tz=z;s.mode='walk';break}}if(s.mode!=='walk'){s.mode='sit';s.timer=4}}
     else if(r<.75){s.mode='sleep';s.timer=25+Math.random()*30}else{s.mode='sit';s.timer=5+Math.random()*6}}}}
   // 偶爾自己喵一聲（傲嬌：你靠近的時候比較常）
-  if(!Achi.busy&&s.mode!=='sleep'&&dp<5&&Math.random()<dt*.05){Snd.play(Math.random()<.5?'mew':'meow');Achi.tip3(['喵。','……喵。','喵？','（瞪）'][(Math.random()*4)|0])}
+  if(!Achi.busy&&s.mode!=='sleep'&&dp<5&&Math.random()<dt*.025){Snd.play(Math.random()<.5?'mew':'meow');Achi.mouth=.5;Achi.tip3(['喵～','……喵。','喵？','喵。'][(Math.random()*4)|0])}
   s.y=heightAt(s.area,s.x,s.z);o.position.set(s.x,s.y,s.z);o.rotation.y=s.ry;
   // 姿勢
   const sleep=s.mode==='sleep',walk=spd>0;u.ph+=dt*(walk?spd*5:1);
@@ -3670,6 +3717,7 @@ const Achi={obj:null,s:null,away:0,tip:null,
   u.legs.forEach((l,i)=>{l.position.y=.09+(walk?Math.max(0,Math.sin(u.ph+(i%2?PI:0)+(i>1?PI/2:0)))*.08:0);l.visible=!sleep});
   u.inner.position.y=sleep?-.12:0;u.inner.scale.set(sleep?1.06:1,1,sleep?.9:1);
   if(sleep){u.tail.position.set(.3,.2,-.25);u.tail.rotation.set(PI/2,0,1.2)}else{u.tail.position.set(0,.42,-.58);u.tail.rotation.set(-.35+Math.sin(t*2)*.08,Math.sin(t*(walk?6:1.4))*.35,0)}
+  Achi.mouth=Math.max(0,(Achi.mouth||0)-dt);u.mouth.scale.y=Achi.mouth>0?.01+Math.sin(Math.min(1,Achi.mouth*2)*PI)*1:.01;
   if(u.purr>0){u.purr-=dt;u.inner.scale.y=1+Math.sin(t*40)*.015}
   // 互動時的特別姿勢：翻肚、揮爪、吃東西、被摸頭瞇眼
   const po=s.pose;u.inner.rotation.z=0;u.legs[0].position.set(-.2,u.legs[0].position.y,.36);
@@ -3687,17 +3735,21 @@ const Achi={obj:null,s:null,away:0,tip:null,
  // 跟阿奇互動時：角色走到牠面前蹲下，鏡頭拉近到側面
  begin(){
   const s=Achi.s;Achi.busy=true;s.mode='sit';s.pose=null;Eng.lock++;
-  let nx=pl.x-s.x,nz=pl.z-s.z;const d=Math.hypot(nx,nz)||1;nx/=d;nz/=d;
-  pl.x=s.x+nx*1.0;pl.z=s.z+nz*1.0;pl.ry=Math.atan2(-nx,-nz);s.ry=Math.atan2(nx,nz);
+  // 一起挑「你蹲在阿奇哪一邊」和「鏡頭從哪一側拍」：要看得到你的臉、你的手和阿奇，鏡頭後面也要夠空
+  const free=(x,z,dx,dz)=>{let f=0;for(let j=1;j<=10;j++){if(Achi.ok(s.area,x+dx*j*.6,z+dz*j*.6))f++;else break}return f};
+  let nx0=pl.x-s.x,nz0=pl.z-s.z;{const d=Math.hypot(nx0,nz0)||1;nx0/=d;nz0/=d}
+  let B={sc:-1,nx:nx0,nz:nz0,yaw:Eng.yaw,f:6};
+  for(let k=0;k<12;k++){const th=k/12*TAU,nx=Math.sin(th),nz=Math.cos(th);if(!Achi.ok(s.area,s.x+nx,s.z+nz))continue;
+   for(const sd of[-1,1]){let dx=nz*sd-nx*.45,dz=-nx*sd-nz*.45;const l=Math.hypot(dx,dz);dx/=l;dz/=l;
+    const f=free(s.x+nx*.5,s.z+nz*.5,dx,dz),sc=f*3+(nx*nx0+nz*nz0)*2;if(sc>B.sc)B={sc,nx,nz,yaw:Math.atan2(dx,dz),f}}}
+  const nx=B.nx,nz=B.nz;pl.x=s.x+nx*1.0;pl.z=s.z+nz*1.0;pl.ry=Math.atan2(-nx,-nz);s.ry=Math.atan2(nx,nz);
   const u=pl.obj.userData;tw(350,k=>u.crouch=k);
-  // 鏡頭從側面斜上方拍：看得到你的手和阿奇（挑比較空的那一側，避免卡進牆或欄杆）
-  const y0=s.y||0,mx=(pl.x+s.x)/2,mz=(pl.z+s.z)/2;
-  const room=sd=>{let ok=0;for(let k=1;k<=4;k++){if(Achi.ok(s.area,mx+nz*sd*2*k/4,mz-nx*sd*2*k/4))ok++}return ok};
-  const sd=room(-1)>room(1)?-1:1,cx=mx+nz*sd*2,cz=mz-nx*sd*2;
-  Eng.setCine(()=>Eng.camSet(cx,y0+2.5,cz,mx,y0+.45,mz))},
+  Achi.cam={yaw:Eng.yaw,dist:Eng.dist,pitch:Eng.pitch};
+  s.y=heightAt(s.area,s.x,s.z);Eng.focus={x:(pl.x+s.x)/2,z:(pl.z+s.z)/2,y:s.y+.55,dy:MOBILE&&innerHeight>innerWidth?.55:.15}; // 手機直式：對話框在下面，把你和阿奇往畫面上方放
+  Eng.yaw=B.yaw;Eng.dist=clamp(B.f*.6,3.8,4.8);Eng.pitch=.55;Eng.snapCam=true;Eng.camFree=1},
  end(){
   const u=pl.obj.userData;u.act=null;Achi.prop(null);tw(300,k=>u.crouch=1-k);
-  Achi.busy=false;Achi.s.pose=null;Achi.s.timer=8;Eng.setCine(null);Eng.lock=Math.max(0,Eng.lock-1)},
+  Achi.busy=false;Achi.s.pose=null;Achi.s.timer=8;Eng.camFree=0;Eng.focus=null;if(Achi.cam){Eng.dist=Achi.cam.dist;Eng.pitch=Achi.cam.pitch;Achi.cam=null}Eng.lock=Math.max(0,Eng.lock-1)},
  prop(m){const A=pl.obj.userData.arms[1];if(Achi._prop){Achi._prop.parent&&Achi._prop.parent.remove(Achi._prop);Achi._prop=null}if(m){m.position.set(0,-.72,.06);A.add(m);Achi._prop=m}},
  interact(){
   const s=Achi.s;P.achi=P.achi||{aff:0,purr:0};const a=P.achi;
@@ -3713,25 +3765,27 @@ const Achi={obj:null,s:null,away:0,tip:null,
   if(fish>0)ch.push({t:`🐟 給牠小魚乾（${fish}）`,fn:()=>Achi.act('fish')});
   ch.push({t:'👋 叫牠的名字',alt:1,fn:()=>Achi.act('name')},{t:'不打擾牠了',alt:1,fn:()=>Achi.end()});
   Dlg.say('阿奇',[open],ch)},
- async act(k){
+ async act(k){try{await Achi._act(k)}catch(e){console.warn('achi',e);Achi.anim=0;Achi.s.pose=null;pl.obj.userData.act=null;Achi.prop(null);Achi.end()}},
+ async _act(k){
   const a=P.achi,s=Achi.s,u=pl.obj.userData,r=Math.random();let L=[];Achi.anim=1;
   if(k==='head'){a.aff++;u.act='pat';
    if(r<.6){s.pose='purr';Achi.purr();await wait(2000);L=['阿奇瞇起眼睛，頭頂往你的手心蹭了一下，發出小小的呼嚕聲。','……然後假裝什麼都沒發生。']}
-   else{s.pose='snub';Snd.play('mew');await wait(1300);L=['阿奇把頭轉開了。','（但是牠沒有走開。）']}}
+   else{s.pose='snub';Snd.play('mew');Achi.mouth=.5;await wait(1300);L=['阿奇把頭轉開了。','（但是牠沒有走開。）']}}
   else if(k==='belly'){a.aff++;
-   if(a.aff<4||r<.35){u.act='rub';await wait(500);s.pose='swat';Snd.play('hiss');Achi.float('🐾');await wait(450);u.act='flinch';await wait(700);L=['阿奇用肉球拍了你的手一下。','不痛。但是很有尊嚴。']}
+   if(a.aff<4||r<.35){u.act='rub';await wait(500);s.pose='swat';Snd.play('paw');Achi.float('🐾');await wait(450);u.act='flinch';await wait(700);L=['阿奇用肉球拍了你的手一下。','不痛。但是很有尊嚴。']}
    else{s.pose='roll';await wait(450);u.act='rub';Achi.purr(true);await wait(2300);L=['阿奇翻成肚子朝天，軟軟的、熱熱的。','呼嚕聲大到整條走廊都聽得到。']}}
   else if(k==='fish'){P.fish--;a.aff+=2;Achi.prop(fishPack());u.act='give';await wait(700);
    s.pose='eat';await tw(1400,q=>{if(Achi._prop)Achi._prop.scale.setScalar(Math.max(.01,1-q))});Achi.prop(null);u.act=null;s.pose='purr';Achi.purr(true);await wait(900);
    s.follow=45;L=['阿奇三口就把小魚乾吃完了。','然後舔了舔嘴巴，開始跟著你走。','（牠說，牠只是剛好也要往這邊走。）']}
-  else{u.crouch=0;u.wave=1.4;await wait(500);if(r<.5){s.pose='snub';L=['你叫了一聲「阿奇」。','阿奇的耳朵動了一下，沒有回頭。']}else{Snd.play('meow');Achi.tip3('喵。');await wait(700);L=['你叫了一聲「阿奇」。','「喵。」阿奇回答了你。只回答一次。']}u.crouch=1}
+  else{u.crouch=0;u.wave=1.4;await wait(500);if(r<.5){s.pose='snub';L=['你叫了一聲「阿奇」。','阿奇的耳朵動了一下，沒有回頭。']}else{Snd.play('meow');Achi.mouth=.6;Achi.tip3('喵～');await wait(700);L=['你叫了一聲「阿奇」。','「喵。」阿奇回答了你。只回答一次。']}u.crouch=1}
   u.act=null;s.pose=null;Achi.save();
   // 獎勵一：熟了之後，阿奇會去叼一個黑貓耳朵髮箍回來給你
   Achi.anim=0;
   if(!a.ear&&a.aff>=4&&a.purr>=1){Dlg.say('阿奇',L,null,()=>Achi.gift());return}
   if(a.ear&&(k==='belly'||k==='fish')&&r<.5&&Date.now()-(a.hintT||0)>90000){const miss=STAMPS.map((x,j)=>j).filter(j=>!P.stamps.includes(j)&&j!==10&&j!==11);if(miss.length){a.hintT=Date.now();Achi.save();L.push('阿奇忽然站起來，盯著某個方向看了很久。','你好像想起有人說過：「'+STAMPS[miss[(Math.random()*miss.length)|0]].h+'」')}}
   Dlg.say('阿奇',L,null,()=>setTimeout(()=>Achi.menu(),40))},
- async gift(){
+ async gift(){try{await Achi._gift()}catch(e){console.warn('gift',e);Achi.anim=0;Achi.s.animSpd=0;Achi.end()}},
+ async _gift(){
   const s=Achi.s,a=P.achi,u=pl.obj.userData,o=Achi.obj.userData;Achi.anim=1;
   Dlg.say('阿奇',['阿奇忽然站起來，頭也不回地走掉了。'],null,null);await wait(900);Dlg.end&&Dlg.on&&Dlg.end();
   // 走開
@@ -3759,21 +3813,39 @@ function catEarBand(){const g=new T.Group();const bd=new T.Mesh(new T.TorusGeome
 
 /* ---- 同學或劇場助理走過來，把一包小魚乾遞給你（傳院大廳沒有插座，也沒有店：小魚乾是大家私藏的） ---- */
 async function npcGiveFish(){
- if(Game.fishBusy)return;const a=Eng.area;
+ if(Game.fishBusy||!Cafe.seat||Eng.area!=='hall')return;const a=Eng.area;
  const cand=NPCS.filter(n=>n.d.room===a&&!n.d.obj&&!n.d.static&&n.o.visible).sort((x,y)=>Math.hypot(x.x-pl.x,x.z-pl.z)-Math.hypot(y.x-pl.x,y.z-pl.z));
- const n=cand[0];if(!n)return;Game.fishBusy=1;n.busy=true;const x0=n.x,z0=n.z;
- const side=Cafe.seat?Cafe.seat.ry+PI/2:pl.ry+PI/2,tx=pl.x+Math.sin(side)*1.05,tz=pl.z+Math.cos(side)*1.05;
- const go=(xa,za,xb,zb)=>{const d=Math.hypot(xb-xa,zb-za);n.ry=Math.atan2(xb-xa,zb-za);n.spd=1.8;return tw(Math.max(300,d/1.8*1000),q=>{n.x=xa+(xb-xa)*q;n.z=za+(zb-za)*q}).then(()=>n.spd=0)};
- await go(x0,z0,tx,tz);n.ry=Math.atan2(pl.x-n.x,pl.z-n.z);
- // 鏡頭轉到側面，看得到兩個人和那包小魚乾
- {const fr=Cafe.seat?Cafe.seat.ry:pl.ry,mx=(n.x+pl.x)/2,mz=(n.z+pl.z)/2,y0=pl.y||0,cx=pl.x+Math.sin(fr)*2.6+(n.x-pl.x)*.5,cz=pl.z+Math.cos(fr)*2.6+(n.z-pl.z)*.5;
-  Eng.setCine(()=>Eng.camSet(cx,y0+1.9,cz,mx,y0+1.05,mz))}
- const pk=fishPack(),ua=n.o.userData;pk.position.set(0,-.72,.06);ua.arms[1].add(pk);ua.act='give';Snd.play('pop');await wait(900);
- ua.arms[1].remove(pk);ua.act=null;Achi.prop(pk);pl.obj.userData.act='hold';Snd.play('click');
- P.fish=(P.fish||0)+1;P.fishGot=1;Store.saveP(P);
- const who=n.d.name;await new Promise(r=>Dlg.say(who,[['這個給你。','（從口袋拿出一包小魚乾）'],['欸，這包給你。','我們劇組排練到很晚的時候，都會分零食吃。'],['分你一包。','走廊那邊有一隻黑貓，牠超愛這個。……別說是我給的。']][(Math.random()*3)|0],null,r));
- pl.obj.userData.act=null;Achi.prop(null);Eng.setCine(null);toast('🐟 獲得一包小魚乾（'+P.fish+'）。好像有誰會喜歡。');
- await go(tx,tz,x0,z0);n.busy=false;Game.fishBusy=0}
+ const n=cand[0];if(!n)return;Game.fishBusy=1;n.busy=true;Eng.lock++;Eng.anims=(Eng.anims||0)+1;const ui=$('cafe');if(ui)ui.style.visibility='hidden';
+ const x0=n.x,z0=n.z,ua=n.o.userData;let pk=null,locked=true;
+ const unlock=()=>{if(locked){locked=false;Eng.lock=Math.max(0,Eng.lock-1)}};
+ const done=()=>{ // 不管中間發生什麼事，最後一定把狀態還原
+  if(!Game.fishBusy)return;Game.fishBusy=0;Eng.anims=Math.max(0,(Eng.anims||1)-1);unlock();Eng.setCine(null);
+  if(pk&&pk.parent)pk.parent.remove(pk);Achi.prop(null);ua.act=null;pl.obj.userData.act=null;const u2=$('cafe');if(u2)u2.style.visibility='';
+  n.x=x0;n.z=z0;n.spd=0;n.busy=false};
+ const guard=setTimeout(done,20000);
+ try{
+  const side=(Cafe.seat?Cafe.seat.ry:pl.ry)+PI/2,tx=pl.x+Math.sin(side)*1.05,tz=pl.z+Math.cos(side)*1.05;
+  const go=(xa,za,xb,zb)=>{const d=Math.hypot(xb-xa,zb-za);n.ry=Math.atan2(xb-xa,zb-za);n.spd=1.8;return tw(Math.min(4000,Math.max(300,d/1.8*1000)),q=>{n.x=xa+(xb-xa)*q;n.z=za+(zb-za)*q}).then(()=>n.spd=0)};
+  await go(x0,z0,tx,tz);n.ry=Math.atan2(pl.x-n.x,pl.z-n.z);
+  {const fr=Cafe.seat?Cafe.seat.ry:pl.ry,mx=(n.x+pl.x)/2,mz=(n.z+pl.z)/2,y0=pl.y||0,cx=pl.x+Math.sin(fr)*2.6+(n.x-pl.x)*.5,cz=pl.z+Math.cos(fr)*2.6+(n.z-pl.z)*.5;
+   Eng.setCine(()=>Eng.camSet(cx,y0+1.9,cz,mx,y0+1.05,mz))}
+  pk=fishPack();pk.position.set(0,-.72,.06);ua.arms[1].add(pk);ua.act='give';Snd.play('pop');await wait(900);
+  ua.arms[1].remove(pk);ua.act=null;Achi.prop(pk);pl.obj.userData.act='hold';Snd.play('click');
+  P.fish=(P.fish||0)+1;P.fishGot=1;Store.saveP(P);
+  await new Promise(r=>Dlg.say(n.d.name,[['這個給你。','（從口袋拿出一包小魚乾）'],['欸，這包給你。','我們劇組排練到很晚的時候，都會分零食吃。'],['分你一包。','走廊那邊有一隻黑貓，牠超愛這個。……別說是我給的。']][(Math.random()*3)|0],null,r));
+  pl.obj.userData.act=null;Achi.prop(null);pk=null;Eng.setCine(null);toast('🐟 獲得一包小魚乾（'+P.fish+'）。好像有誰會喜歡。');
+  unlock();const u3=$('cafe');if(u3)u3.style.visibility=''; // 對話結束就能操作，同學自己走回去
+  await go(n.x,n.z,x0,z0)}
+ catch(e){console.warn('fish',e)}
+ finally{clearTimeout(guard);done()}}
+
+/* ---- 保險：任何動畫或對話意外中斷時，幾秒後自動把操作還給玩家，不會卡住 ---- */
+setInterval(()=>{
+ if(typeof Eng==='undefined'||!P.started)return;
+ const busy=Dlg.on||Modal.on||Game.fx||(Eng.anims>0)||Achi.anim||Game.fishBusy||Graf.on||($('skip')&&!$('skip').classList.contains('hide'))||document.getElementById('sfx');
+ const stuck=(Eng.lock>0||cineCam)&&!busy&&!Eng.sit&&!Achi.busy;
+ Eng.stuckT=stuck?(Eng.stuckT||0)+1:0;
+ if(Eng.stuckT>=4){Eng.stuckT=0;Eng.lock=0;Eng.setCine(null);if(pl.obj)pl.obj.userData.act=null;console.warn('unstuck')}},1000);
 
 /* ================= 遊戲流程 ================= */
 let P={name:'旅人',look:{sp:'human',c:0,acc:[]},stamps:[],quests:{},acc:[],sent:0,codes:{}};
@@ -3784,7 +3856,7 @@ const Game={
  act(){
   if(!P.started)return;
   if(Dlg.on){Dlg.next();return}if(Modal.on||Eng.lock)return;
-  if(Cafe.seat){Cafe.stand();return}
+  if(Cafe.seat){if(!Eng.lock)Cafe.stand();return}
   const n=Eng.near();if(!n)return;Snd.resume();Snd.play('click');
   if(n.kind==='npc')Game.talk(n.n.d.talk,n.n);else if(n.kind==='cat')Achi.interact();else Game.spot(n.s)},
  nearMailbox(){return Eng.area==='post'?W.mailIn:(Eng.area==='world'?NPCS.find(n=>n.d.id==='mail3').o:(Eng.area==='campus'?NPCS.find(n=>n.d.id==='mail2').o:null))},
