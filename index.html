@@ -43,6 +43,8 @@ input.txt:focus,textarea.txt:focus{border-color:var(--teal)}
 .seated #sayb,.seated #feed,.seated #joy,.catting #sayb,.catting #joy{display:none!important}
 #cafe .t{width:100%;text-align:center;font-size:13px;color:var(--ink2)}
 #cafe button{background:#fffaf0;border:1.5px solid var(--line);border-radius:99px;padding:8px 14px;font-size:15px;cursor:pointer;color:var(--ink)}
+.rules{background:#fffaf0;border:1.5px dashed var(--red);border-radius:10px;padding:10px 14px;margin:10px auto;max-width:420px;text-align:left}
+.rules b{display:block;color:var(--red);font-weight:400;letter-spacing:.15em;margin-bottom:4px}.rules p{margin:0;font-size:15px;line-height:1.8;color:var(--ink)}
 .cupcard{background:#fffaf0;border:2px solid #b9a37a;border-radius:50%/16%;padding:22px 26px;margin:10px auto;max-width:420px;text-align:center;box-shadow:var(--shadow)}
 .cupcard p{margin:4px 0;font-size:16px;color:var(--ink2);line-height:1.8}.cupcard p.b{color:var(--red);font-size:17px}.cupcard small{display:block;margin-top:10px;color:var(--ink2);letter-spacing:.12em}
 .cupcard.sm{padding:10px 16px;border-radius:12px;margin:8px 0;max-width:none}.cupcard.sm p{font-size:14px}.cupcard.lock{opacity:.45}
@@ -2781,6 +2783,7 @@ function openGames(){
   <button class="gcard" id="g4"><span class="ge">🌠</span><b>看看大家的天燈</b><small>天上的光，都是別人的願望。</small></button>
   <button class="gcard" id="g5"><span class="ge">🔁</span><b>失去與擁有</b><small>五個小情境，選一個你相信的開始。</small></button>
   <button class="gcard" id="g6"><span class="ge">📮</span><b>記憶郵戳</b><small>記住郵戳的順序。最高 ${b.memo||0} 關</small></button>
+  <button class="gcard" id="g8"><span class="ge">🎫</span><b>郵票小遊戲</b><small>拿到的郵票，小遊戲都可以再玩。已解鎖 ${P.stamps.length} / 12</small></button>
   <button class="gcard" id="g7"><span class="ge">💞</span><b>默契信（連線）</b><small>和同時在線的人回答同一題，看誰跟你想的一樣。</small></button>
  </div>`,m=>{
   m.querySelector('#g5').onclick=()=>{Modal.close();gameLoss()};
@@ -2789,7 +2792,12 @@ function openGames(){
   m.querySelector('#g1').onclick=()=>{Modal.close();gameCatch()};
   m.querySelector('#g2').onclick=()=>{Modal.close();gameMatch()};
   m.querySelector('#g3').onclick=()=>{Modal.close();gameLantern()};
-  m.querySelector('#g4').onclick=()=>{Modal.close();openBoard('lantern')}})}
+  m.querySelector('#g4').onclick=()=>{Modal.close();openBoard('lantern')};
+  m.querySelector('#g8').onclick=()=>{Modal.close();openStampGames()}})}
+function openStampGames(){
+ Modal.open(`<h2>郵票小遊戲</h2><p class="d">每一張郵票都有自己的小遊戲。拿到郵票之後，可以在這裡一直重玩。</p><div class="gcards">${STAMPS.map((s,i)=>{const own=P.stamps.includes(i);
+  return `<button class="gcard" data-i="${i}" ${own?'':'disabled style="opacity:.5"'}><img src="${stampURL(i)}" style="width:44px;${own?'':'filter:grayscale(1)'}"><b>${own?esc(CH[i].t):'？？？'}</b><small>${own?esc(s.n)+' 的小遊戲':'還沒拿到這張郵票'}</small></button>`}).join('')}</div>`,m=>{
+  m.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{Modal.close();replayCH(+b.dataset.i)})},{w:'760px'})}
 
 /* ---- 1. 接信大作戰 ---- */
 function gameCatch(opt){
@@ -2954,27 +2962,32 @@ function runClaim(c){
  const {i,s}=c;if(P.stamps.includes(i)){return}
  const sp=CH[i],fail=()=>{if(s){s.got=false;s.cd=performance.now()+9000}P.pend=P.pend||[];if(!P.pend.includes(i)){P.pend.push(i);Store.saveP(P)}toast('這張郵票還在等你，隨時可以到郵票冊再試一次')};
  const win=()=>{P.pend=(P.pend||[]).filter(x=>x!==i);Game.collect(i)};
- let started=0;
- Modal.open(`<div style="text-align:center"><img class="stampimg" src="${stampURL(i)}" style="width:112px;filter:grayscale(.8);opacity:.75"><h2>${esc(sp.t)}</h2><p style="white-space:pre-line;font-size:15px;line-height:1.9">${esc(sp.l)}</p></div>
-  <div class="row"><button class="btn" id="cs">試試看</button><button class="btn ghost" id="cn">先不要</button></div>`,m=>{
-  m.querySelector('#cs').onclick=()=>{started=1;Modal.close();launchCH(i,sp,ok=>ok?win():fail())};
-  m.querySelector('#cn').onclick=Modal.close;
-  Modal.onclose=()=>{if(!started)fail()}})}
-function launchCH(i,sp,cb){CHG[sp.g]({title:sp.t,cb})}
+ launchCH(i,sp,ok=>ok?win():fail())}
+// replay：已經拿到的郵票可以一直重玩（不會再給一次郵票）
+function launchCH(i,sp,cb,replay){CHG[sp.g]({title:sp.t,cb,lore:sp.l,img:stampURL(i),replay})}
+function replayCH(i){launchCH(i,CH[i],ok=>{if(ok)toast('又過了一次 ✨')},true)}
 
 /* ---- 共用外框：標題、提示、勝負按鈕、關閉時回報結果 ---- */
 function chShell(opt,self,hint,body,init){
  let won=0,lost=0,retry=0,closed=0;const clean=[];
- Modal.open(`<h2>${esc(opt.title)}</h2><p class="d" style="text-align:center">${hint}</p><div id="cg" style="text-align:center">${body}</div><p class="d" id="cm" style="text-align:center;min-height:1.5em;margin:6px 0"></p><div class="row" id="cr"></div>`,m=>{
+ // 第一次打開先看說明，按「開始」才真的開始計時；輸了重來就直接開始
+ const intro=!opt._again;opt._again=0;
+ Modal.open(`<h2>${esc(opt.title)}${opt.replay?'<small style="font-size:13px;color:var(--ink2)">　練習模式</small>':''}</h2>
+ <div id="ci" class="${intro?'':'hide'}" style="text-align:center">${opt.img?`<img class="stampimg" src="${opt.img}" style="width:96px;${opt.replay?'':'filter:grayscale(.8);opacity:.75'}">`:''}${opt.lore?`<p style="white-space:pre-line;font-size:15px;line-height:1.9;margin:6px 0">${esc(opt.lore)}</p>`:''}
+  <div class="rules"><b>遊戲規則</b><p>${hint}</p></div>
+  <div class="row"><button class="btn" id="cgo">▶ 開始</button><button class="btn ghost" id="cno">${opt.replay?'關上':'先不要'}</button></div></div>
+ <div id="cp" class="${intro?'hide':''}"><p class="d" style="text-align:center">${hint}</p><div id="cg" style="text-align:center">${body}</div><p class="d" id="cm" style="text-align:center;min-height:1.5em;margin:6px 0"></p><div class="row" id="cr"></div></div>`,m=>{
   const A={m,q:s=>m.querySelector(s),get closed(){return closed},get over(){return won||lost},
    say(t){m.querySelector('#cm').textContent=t},
-   win(msg){if(won||lost||closed)return;won=1;Snd.play('ok');A.say(msg||'過關了。');const r=m.querySelector('#cr');r.innerHTML='<button class="btn" id="ck">收下郵票</button>';r.querySelector('#ck').onclick=Modal.close},
-   lose(msg){if(won||lost||closed)return;lost=1;Snd.play('err');A.say(msg||'差一點。');const r=m.querySelector('#cr');r.innerHTML='<button class="btn" id="cy">再試一次</button><button class="btn ghost" id="cq">先離開</button>';r.querySelector('#cy').onclick=()=>{retry=1;Modal.close();self()};r.querySelector('#cq').onclick=Modal.close},
+   win(msg){if(won||lost||closed)return;won=1;Snd.play('ok');A.say(msg||'過關了。');const r=m.querySelector('#cr');
+    if(opt.replay){r.innerHTML='<button class="btn" id="cy">再玩一次</button><button class="btn ghost" id="ck">關上</button>';r.querySelector('#cy').onclick=()=>{retry=1;opt._again=1;Modal.close();self()}}else r.innerHTML='<button class="btn" id="ck">收下郵票</button>';r.querySelector('#ck').onclick=Modal.close},
+   lose(msg){if(won||lost||closed)return;lost=1;Snd.play('err');A.say(msg||'差一點。');const r=m.querySelector('#cr');r.innerHTML='<button class="btn" id="cy">再試一次</button><button class="btn ghost" id="cq">先離開</button>';r.querySelector('#cy').onclick=()=>{retry=1;opt._again=1;Modal.close();self()};r.querySelector('#cq').onclick=Modal.close},
    on(el,ev,fn,o){el.addEventListener(ev,fn,o);clean.push(()=>el.removeEventListener(ev,fn,o))},
    loop(fn){let last=performance.now(),id=0;const f=now=>{if(closed)return;id=requestAnimationFrame(f);const dt=Math.min(.05,(now-last)/1000);last=now;fn(dt)};id=requestAnimationFrame(f);clean.push(()=>cancelAnimationFrame(id))},
    hearts(n){return'♥'.repeat(Math.max(0,n))}};
   Modal.onclose=()=>{closed=1;clean.forEach(f=>f());if(!retry)opt.cb(!!won)};
-  init(m,A)})}
+  const go=()=>{m.querySelector('#ci').classList.add('hide');m.querySelector('#cp').classList.remove('hide');init(m,A)};
+  if(intro){m.querySelector('#cgo').onclick=()=>{Snd.play('click');go()};m.querySelector('#cno').onclick=Modal.close}else go()})}
 const chPt=(cv,e)=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
 const CHG={};
 
@@ -3271,11 +3284,21 @@ const Graf={walls:[],on:false,aim:true,col:GRAF_C[0],size:14,cur:null,hist:[],pe
    {c:'#2fa6a0',r:10,p:[500,520,560,470,620,520,680,470]},
    {c:'#f08a3a',r:6,p:[110,540,140,500,190,545,230,500]}];
   seeds.forEach(s=>grafPlay(cx,s));w.tex.needsUpdate=true},
- async load(){ // 把大家噴的重畫一次
-  let rows=[];try{rows=await Store.list('m3_graffiti',{limit:80})}catch(e){}
-  this.walls.forEach(w=>this.base(w));this.seen=new Set();
-  rows.filter(r=>r.s&&r.w).sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(r=>{this.seen.add(r.id);this.apply(r)});
-  this.pending.forEach(s=>{const w=this.walls.find(z=>z.id===s.w);if(w)grafPlay(w.cx,s)});this.walls.forEach(w=>w.tex.needsUpdate=true);return rows},
+ // 第一次：依時間順序讀取「全部」的噴漆，從最舊的開始畫（以前只讀 80 筆、而且沒照順序，筆數一多就會有塗鴉消失）
+ async fetch(after){const fs=Store.fs&&Store.fs();
+  if(fs){let q=fs.collection('m3_graffiti').orderBy('ts');if(after)q=q.where('ts','>',after);const out=[];let last=null;
+   for(let page=0;page<20;page++){let qq=q.limit(300);if(last)qq=qq.startAfter(last);const sn=await qq.get();sn.docs.forEach(d=>out.push(Object.assign({id:d.id},d.data())));if(sn.size<300)break;last=sn.docs[sn.docs.length-1]}
+   return out}
+  return(await Store.list('m3_graffiti')).filter(r=>!after||(r.ts||0)>after)},
+ async load(){
+  let rows=[];try{rows=await this.fetch(0)}catch(e){Diag.err(e,'graffiti');return[]}
+  this.walls.forEach(w=>this.base(w));this.seen=new Set();this.lastTs=0;
+  rows.filter(r=>r.s&&r.w).sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(r=>{this.seen.add(r.id);this.apply(r);this.lastTs=Math.max(this.lastTs,r.ts||0)});
+  this.pending.forEach(s=>{const w=this.walls.find(z=>z.id===s.w);if(w)grafPlay(w.cx,s)});this.walls.forEach(w=>w.tex.needsUpdate=true);this.loaded=1;return rows},
+ // 之後：只抓新的，疊上去就好，不重畫整面牆
+ async more(){if(!this.loaded)return this.load();let rows=[];try{rows=await this.fetch(this.lastTs)}catch(e){Diag.err(e,'graffiti');return}
+  let n=0;rows.sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(r=>{this.lastTs=Math.max(this.lastTs,r.ts||0);if(this.seen.has(r.id)||!r.s||!r.w)return;this.seen.add(r.id);this.apply(r);n++});
+  if(n)this.walls.forEach(w=>w.tex.needsUpdate=true)},
  apply(r){const w=this.walls.find(z=>z.id===r.w);if(!w)return;let a=[];try{a=JSON.parse(r.s)}catch(e){}if(!Array.isArray(a))return;
   a.slice(0,40).forEach(s=>{if(s&&Array.isArray(s.p)&&s.p.length<=3000&&typeof s.c==='string'&&/^#[0-9a-f]{6}$/i.test(s.c)&&s.r>=3&&s.r<=40)grafPlay(w.cx,s)});w.tex.needsUpdate=true},
  pick(e){const cv=$('gl'),b=cv.getBoundingClientRect();const v=new T.Vector2(((e.clientX-b.left)/b.width)*2-1,-((e.clientY-b.top)/b.height)*2+1);
@@ -3316,7 +3339,7 @@ const Graf={walls:[],on:false,aim:true,col:GRAF_C[0],size:14,cur:null,hist:[],pe
    $('gbAd').onclick=async()=>{if(!confirm('清空這兩面牆上所有人的塗鴉？'))return;try{const rows=await Store.list('m3_graffiti',{limit:200});for(const r of rows)await Store.del('m3_graffiti',r.id)}catch(e){toast('清不掉：'+(e.message||e))}this.pending=[];await this.load()}}
   b.style.display=show?'block':'none';document.body.classList.toggle('spraying',show);if(show)this.sync()},
  tick(){if(this.on&&!this.inZone()){this.exit();toast('離開白牆，收起噴漆罐')}},
- init(){if(this._i)return;this._i=1;setInterval(()=>this.tick(),400);setTimeout(()=>this.load(),2500);setInterval(()=>{if(Eng.area==='campus'&&!this.cur&&!this.on)this.load()},60000)}
+ init(){if(this._i)return;this._i=1;setInterval(()=>this.tick(),400);setTimeout(()=>this.load(),2500);setInterval(()=>{if(Eng.area==='campus'&&!this.cur)this.more()},20000)}
 };
 
 /* ---- story.js ---- */
@@ -3342,8 +3365,8 @@ function openStamp(i,fromAlbum){
  <div style="text-align:center"><img class="stampimg" src="${stampURL(i)}" style="width:132px;${own?'':'filter:grayscale(1) brightness(1.15);opacity:.6'}"></div>
  ${own?`<p class="d" style="text-align:center;margin:8px 0 2px"><span class="chip on" style="cursor:default">${esc(T.k)}</span></p><p style="white-space:pre-line;font-size:15px;line-height:1.9;text-align:center;margin:10px 4px">${esc(T.s)}</p>
  `:`<p class="d" style="text-align:center">還沒收進郵票冊。<br>${esc(S.h)}</p>${(P.pend||[]).includes(i)?'<div class="row"><button class="btn sm" id="sk">再試一次</button></div>':''}`}
- <div class="row" style="margin-top:12px">${fromAlbum?'<button class="btn sm ghost" id="sb">回郵票冊</button>':''}<button class="btn sm" id="sc">${fromAlbum?'關上':'收進郵票冊'}</button></div>`,m=>{
-  m.querySelector('#sc').onclick=Modal.close;const sk=m.querySelector('#sk');if(sk)sk.onclick=()=>{Modal.close();claimStamp(i)};const b=m.querySelector('#sb');if(b)b.onclick=()=>{Modal.close();openAlbum()}})}
+ <div class="row" style="margin-top:12px">${own?`<button class="btn sm alt" id="sr">🎮 再玩一次「${esc(CH[i].t)}」</button>`:''}${fromAlbum?'<button class="btn sm ghost" id="sb">回郵票冊</button>':''}<button class="btn sm" id="sc">${fromAlbum?'關上':'收進郵票冊'}</button></div>`,m=>{
+  m.querySelector('#sc').onclick=Modal.close;const sr=m.querySelector('#sr');if(sr)sr.onclick=()=>{Modal.close();replayCH(i)};const sk=m.querySelector('#sk');if(sk)sk.onclick=()=>{Modal.close();claimStamp(i)};const b=m.querySelector('#sb');if(b)b.onclick=()=>{Modal.close();openAlbum()}})}
 /* ---- 目標引導：HUD 箭頭＋場景裡的指示標 ---- */
 const Goal={beacon:null,last:'',
  cur(){return QUESTS.find(q=>q.m&&!P.quests[q.id])||null},
@@ -4049,7 +4072,7 @@ const Game={
    else{Eng.camSet(x-4+sm(.5,1,k)*1,2.4+sm(.5,1,k)*1,z-5.5,x,1.4,z+8)}
    if(k>.47&&!Game._bs){Game._bs=1;if(!have){const o=STAMPOBJ.find(q=>q.d.i===6);if(o){o.got=true;claimStamp(6,o)}else claimStamp(6)}else Snd.play('bell')}
   },[{at:.4,t:'小船，輕輕離岸。',hold:2},{at:3.2,t:'這是郵票最愛躲的地方。',hold:2},{at:6.6,t:have?'瀑布還是那麼大聲。':'瀑布的水霧裡，有一張郵票在發光。',hold:2.6},{at:11.2,t:'回去吧，水聲慢慢變小了。',hold:2}]);
-  Game._bs=0;W.boatMoving=false;pl.y=0;
+  Game._bs=0;W.boatMoving=false;pl.y=0;qdone('boat');
   bt.position.set(h.x,.02,h.z);bt.rotation.y=PI;
   await fade(true);pl.x=20.3;pl.z=-18.6;pl.ry=PI;Eng.yaw=0;Eng.pitch=.3;Eng.snapCam=true;await fade(false);Eng.lock--;
  },
@@ -4100,7 +4123,8 @@ function say(txt){Soc.emote&&Soc.emote(txt);const el=document.createElement('div
   setTimeout(()=>{
    try{initEngine(Object.assign({},P.look,{acc:P.acc}))}catch(e){$('tmsg').textContent='你的裝置無法顯示 3D：'+e.message;$('go').disabled=false;$('go').textContent='進入小鎮';console.error(e);return}
    W.spots=W.spots.filter(s=>s.id!=='mailout');
-   P.started=true;Store.saveP(P);$('title').classList.add('hide');$('hud').classList.remove('hide');hud();Game.refreshSent();Soc.init();Graf.init();MapUI.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt();setInterval(()=>{Game.refreshSent();Graf.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt()},60000);
+   P.started=true;if(P.stamps.includes(6))P.quests.boat=1; // 以前搭過船卻沒打勾的玩家：有瀑布郵票就補上
+   Store.saveP(P);$('title').classList.add('hide');$('hud').classList.remove('hide');hud();Game.refreshSent();Soc.init();Graf.init();MapUI.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt();setInterval(()=>{Game.refreshSent();Graf.init();refreshWall();refreshBoard('beach');refreshLanterns();refreshArt()},60000);
    Game.intro();
   },60)};
  $('actb').onclick=()=>Game.act();
