@@ -75,6 +75,10 @@ input.txt:focus,textarea.txt:focus{border-color:var(--teal)}
 #act{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);display:none}
 #act button{background:var(--paper);border:2.5px solid var(--red);border-radius:99px;padding:11px 22px;font-size:17px;box-shadow:var(--shadow),0 0 0 5px rgba(255,250,240,.55);animation:pulse 1.6s ease-in-out infinite;letter-spacing:.06em;white-space:nowrap}
 @keyframes pulse{50%{transform:scale(1.05)}}
+#mbtn{position:absolute;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));display:none;flex-direction:column;gap:10px;z-index:5}
+.touch #mbtn{display:flex}.seated #mbtn,.catting #mbtn{display:none!important}
+#mbtn button{width:54px;height:54px;border-radius:50%;border:2px solid rgba(110,80,50,.4);background:rgba(251,243,223,.85);font-size:24px;box-shadow:var(--shadow);touch-action:manipulation}
+#mbtn button.on{background:#c0523f;border-color:#c0523f}
 #joy{position:absolute;left:22px;bottom:calc(28px + env(safe-area-inset-bottom));width:120px;height:120px;border-radius:50%;background:rgba(244,234,213,.28);border:2px solid rgba(244,234,213,.6);display:none;touch-action:none}
 #joy i{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(244,234,213,.85);box-shadow:var(--shadow)}
 .touch #joy{display:block}
@@ -324,7 +328,8 @@ body.spraying #gl{cursor:crosshair}
  <div id="joy"><i></i></div>
  <div id="act"><button id="actb">互動</button></div>
  <div id="br"><div id="emo"><button>💌</button><button>❄️</button><button>😊</button><button>🎵</button><button>👋</button></div><button class="ib" id="be">💬</button></div>
- <div id="hint">WASD 移動 ・ 空白鍵互動 ・ 拖曳轉視角 ・ Q/E 轉動</div>
+ <div id="hint">WASD 移動 ・ Shift 跑步 ・ 空白鍵跳 ・ F 互動 ・ X 出拳 ・ 拖曳轉視角</div>
+ <div id="mbtn"><button id="mrun" title="跑步">🏃</button><button id="mpunch" title="出拳">👊</button><button id="mjump" title="跳">⤴️</button></div>
 </div>
 <div id="goal" style="display:none"><span id="gar">🎯</span><span id="gtx"></span></div>
 <div id="place"></div>
@@ -523,6 +528,9 @@ function animChar(g,dt,speed,t){
 /* 角色動作：蹲下（腳踩地、膝蓋彎）＋手的動作。u.crouch 0..1；u.act＝'pat' 摸頭｜'rub' 摸肚子｜'give' 伸手遞東西｜'hold' 手拿著 */
 function charAct(g,dt,t){
  const u=g.userData,c=u.crouch||0;
+ if(u.air&&u.legs){u.legs.forEach((l,i)=>{l.rotation.x=-.5;knee(l,.9)});u.arms[0].rotation.z=-.5;u.arms[1].rotation.z=.5}
+ if(u.punch>0){u.punch-=dt;const k=Math.sin(Math.min(1,(.35-u.punch)/.35)*PI),A=u.arms[u.punchArm||0];A.rotation.x=-1.55*k;A.rotation.z=0;u.root.rotation.y=(u.punchArm?-.35:.35)*k}else if(u.root)u.root.rotation.y=0;
+ if(u.flinch>0){u.flinch-=dt;u.root.rotation.z=Math.sin(u.flinch*30)*.12}else if(u.root)u.root.rotation.z=0;
  if(c>0&&u.legs&&!u.sitting){const d=.27*c,th=Math.acos(clamp((.58-d)/.58,-1,1));u.legs.forEach(l=>{l.rotation.x=-th;knee(l,th*2)});g.position.y-=d;u.root.rotation.x=.25*c}else if(u.root)u.root.rotation.x=0;
  const A=u.arms,a=u.act;if(!a)return;
  if(a==='pat'){A[1].rotation.x=-1.75+Math.sin(t*9)*.18;A[1].rotation.z=.25}
@@ -691,37 +699,37 @@ const CONFIG={
  memory:[
   {id:"2023w",season:"112 學年度冬季公演",title:"女僕",dates:"2023/12/16（六）19:30・12/17（日）14:30",venue:"政大傳院劇場",
    credits:[["原著", "Jean Genet"], ["翻譯", "蔡怡怡"], ["導演暨改編", "李采葳、郭安絜"]],
-   desc:"宣傳核心：\n在充滿壓力的環境下尋求解脫，你會怎麼做？",
+   desc:"在充滿壓力的環境下尋求解脫，你會怎麼做？",
    staff:"導演｜李采葳\n導演｜郭安絜\n\n蘇朗芝｜蕭卉錦\n克萊兒｜胡瑄妤\n夫　人｜吳柏萱\n\n舞台監督｜簡秉祺\n排練助理｜蔡欣言\n\n燈光設計｜林兪均\n燈光執行｜吳宜柔\n燈光執行｜李翊瑄\n燈光執行｜游雯淇\n\n音效設計統籌｜柯孟辰\n音效設計｜陳薇安\n音效設計｜劉芝妘\n\n舞台設計｜劉瀚傑\n舞台執行｜李庭頤\n舞台執行｜林恩妤\n舞台執行｜黃伊晨\n舞台執行｜蔡濬宇\n\n服化設計統籌｜溫希雯\n蘇朗芝角色設計｜蘇怡亭\n克萊兒角色設計｜王繹凱\n夫人角色設計｜黃嫀恩\n\n宣傳統籌、文案編寫、企劃｜林君臨\n主視覺｜林佳如\n攝影、影片剪輯｜江靖朗",
    poster:"@maid_p",visual:"@maid_v",stills:[],links:[]},
   {id:"2024s",season:"112 學年度夏季公演",title:"寂寞芳心俱樂部",dates:"2024/5/18（六）19:30・5/19（日）14:30",venue:"政大傳院劇場",
    credits:[["原著", "Beth Henley"], ["翻譯、改編", "陳培廣"]],
-   desc:"宣傳理念：寂寞ＯＵＴ，愛就會ＩＮ！\n\n芳心，意指每個人都有愛與被愛的需要，這樣的渴望導致了所有事件的發生，卻仍然拯救不了這些角色的芳心，因為他們依然渴望、依然感到寂寞。要怎麼擺脫芳心之罪呢？也許衝撞寂寞的世界，人們就能拾起愛的一端。",
+   desc:"寂寞ＯＵＴ，愛就會ＩＮ！\n\n芳心，意指每個人都有愛與被愛的需要，這樣的渴望導致了所有事件的發生，卻仍然拯救不了這些角色的芳心，因為他們依然渴望、依然感到寂寞。要怎麼擺脫芳心之罪呢？也許衝撞寂寞的世界，人們就能拾起愛的一端。",
    staff:"導演｜簡秉祺\n導演｜柯孟辰\n\n丁美寶｜常維禕\n丁美威｜李采葳\n丁美若｜黃嫀恩\n素　姬｜郭安絜\n華　佗｜劉瀚傑\n鄭少康｜巫　琦\n\n舞台監督｜林君臨\n排練助理｜胡瑄妤\n排練助理｜王肇涵\n\n燈光設計｜黃伊晨\n燈光執行｜吳柏萱\n燈光執行｜蔡濬宇\n燈光執行｜張容榮\n燈光執行｜吳芯柔\n燈光執行｜林庭如\n燈光執行｜洪加芝\n燈光執行｜趙唯亦\n\n音效設計統籌｜林恩妤\n音效設計｜林兪均\n音效設計｜蘇怡亭\n音效設計｜李庭頤\n音效設計｜林可云\n\n舞台設計｜劉芝妘\n舞台執行｜江靖朗\n舞台執行｜林佳如\n舞台執行｜潘弘霖\n舞台執行｜李芯妍\n舞台執行｜林昱岑\n舞台執行｜邱昕儀\n舞台執行｜姜語涵\n舞台執行｜陳怡均\n\n服化設計統籌｜蕭卉錦\n丁美寶角色設計｜丁于芩\n丁美威角色設計｜謝雨祺\n丁美若角色設計｜林靖蓉\n素姬角色設計｜方妍蓉\n鄭少康角色設計｜陳宣如\n華佗角色設計｜陳薇安\n\n宣傳統籌｜李翊瑄\n主視覺｜溫希雯\n攝影、影片剪輯｜蔡欣言\n文案｜楊雅媛\n企劃｜游雯淇",
    poster:"@lonely_p",visual:"@lonely_v",stills:[],links:[]},
   {id:"2024w",season:"113 學年度冬季公演",title:"可以睡覺",dates:"2024/12/14（六）14:30、19:30・12/15（日）14:30",venue:"政大傳院劇場",
    credits:[["原作", "別役實"], ["翻譯", "山崎理惠子"]],
-   desc:"宣傳理念：\n「要先看到問題，才能夠去解決。」",
+   desc:"「要先看到問題，才能夠去解決。」",
    staff:"導演｜蘇怡亭\n導演｜李翊瑄\n\n男人｜蔡濬宇\n女人｜胡瑄妤\n\n舞台監督｜柯孟辰\n排練助理｜游雯淇\n排練助理｜洪加芝\n\n燈光設計｜林兪均\n燈光執行｜林君臨、林恩妤、方妍蓉、謝雨褀、陳怡均、李芯妍\n\n聲音設計｜江靖朗\n聲音設計助理｜王肇涵、潘弘霖、吳芯柔、姜語涵\n\n舞台設計｜陳薇安\n舞台執行｜林佳如、林庭如、趙唯亦、林靖蓉、陳宣如、邱昕儀、張容榮\n\n造型設計暨技術統籌｜丁于芩\n服裝設計暨技術執行｜林可云\n\n宣傳統籌｜溫希雯\n主視覺｜楊雅媛\n攝影｜黃伊晨\n文案｜常維禕\n企劃｜林昱岑、溫希雯\n\n（依睡覺時長少到多排序）",
    poster:"@sleep_p",visual:"@sleep_v",stills:[],links:[]},
   {id:"2025s",season:"113 學年度夏季公演",title:"可寵",dates:"2025/5/17（六）19:30・5/18（日）14:30",venue:"政大傳院劇場",
    credits:[["編劇", "李屏瑤"]],
-   desc:"宣傳核心：如何好好說再見。",
+   desc:"如何好好說再見。",
    staff:"導演｜林恩妤、胡瑄妤\n\n舞台監督｜林兪均\n排練助理｜潘弘霖、陳怡均\n\n雅婷｜方妍蓉\n安安｜丁于芩\n敘事者｜陳以言\nAmy｜陳薇安\n小C、雅婷媽媽｜李芯妍\n房東蘇老師｜蘇怡亭\n鄰居、搬家師傅｜黃偉紘\n\n舞台設計｜林佳如\n舞台執行｜王肇涵、謝雨祺、李寈、陳奕嘉、黃雍棣、廖子銘\n\n燈光設計｜趙唯亦\n燈光執行｜林庭如、邱昕儀、陳虹樺、張育嘉、張勛翔、覃翰\n\n聲音設計｜洪加芝\n聲音執行｜林君臨、黃伊晨、蔡濬宇、張琦勤\n\n服化設計統籌｜林靖蓉\n雅婷角色設計｜陳宣如\n安安角色設計｜林昱岑\n敘事者角色設計｜姜語涵\nAmy角色設計｜黃僅婷\n小C角色設計｜游婉彤\n雅婷媽媽角色設計｜蔡依庭\n房東蘇老師角色設計｜文亭云\n鄰居、搬家師傅角色設計｜張玉又\n\n宣傳統籌、攝影｜江靖朗\n視覺設計｜王蕓綺\n文案｜洪栩平\n線上企劃、攝影｜陳宥諼\n線下企劃｜林可云",
    poster:"@pet_p",visual:"@pet_v",stills:[],links:[]},
   {id:"2025w",season:"114 學年度冬季公演",title:"我為你押韻",dates:"2025/12/6（六）19:30・12/7（日）14:30",venue:"政大傳院劇場",
    credits:[["原作劇本", "馮勃棣"]],
-   desc:"宣傳理念：擁抱庸俗。\n那些看似普通，卻真實雋永的瞬間。",
+   desc:"擁抱庸俗。\n那些看似普通，卻真實雋永的瞬間。",
    staff:"導演｜林佳如、蔡濬宇、趙唯亦\n\n舞台監督｜黃伊晨\n排練助理｜游婉彤\n\n博翔｜黃雍棣\n維英｜黃僅婷\n志明、羅密歐、DJ｜陳奕嘉\n春嬌、茱麗葉、大貂｜王蕓綺\n\n舞台設計｜謝雨祺\n舞台執行｜文亭云、李寈、張育嘉、張勛翔、覃翰\n\n燈光設計｜陳怡均\n燈光執行｜林庭如、陳宥諼、張玉又、黃偉紘、廖子銘\n\n聲音設計｜林可云\n聲音執行｜林靖蓉、陳宣如\n\n服化設計統籌｜姜語涵\n博翔角色設計｜姜語涵\n維英角色設計｜陳虹樺\n志明、羅密歐、DJ 角色設計｜張琦勤\n春嬌、茱麗葉、大貂角色設計｜邱昕儀\n\n宣傳統籌、企劃｜方妍蓉\n攝影、企劃｜江靖朗\n主視覺設計｜林昱岑\n文案｜陳以言",
    poster:"@rhyme_p",visual:"@rhyme_v",stills:[],links:[]},
   {id:"2026s",season:"114 學年度夏季公演",title:"小兒子",dates:"2026/5/23（六）19:30・5/24（日）14:30",venue:"政大傳院劇場",
    credits:[["原著", "駱以軍"], ["編劇", "黃致凱"]],
-   desc:"宣傳理念：\n「請在我最不值得被愛的時候愛我，因為那正是我最需要愛的時候。」",
+   desc:"「請在我最不值得被愛的時候愛我，因為那正是我最需要愛的時候。」",
    staff:"導演｜黃雍棣、陳以言、張勛翔\n\n舞台監督｜趙唯亦\n排練助理｜梁家恩、黃辰恩\n\n羅以俊｜蔡濬宇\n羅仲寧｜黃偉紘\n羅仲寧（兒童時期）｜吳亭儀\n張采柔｜文亭云\n羅美玉｜高意涵\n郭志廷、趙總編、書局老闆｜覃翰\n警察、店經理、孫醫師｜丁子涵\n\n舞台設計｜邱昕儀\n舞台執行｜姜語涵、廖子銘、羅可安、高鈺鈞、謝宇萱、黃安妤\n\n燈光設計｜張玉又\n燈光執行｜陳奕嘉、杜晏綺、陳姸廷、施于涵、李欣庭\n\n聲音統籌｜張育嘉\n實音效設計｜謝雨祺\n虛音效設計｜陳怡均\n配樂設計｜林庭如\n\n影像技術監督｜江靖朗\n影像設計｜林佳如\n影像執行｜張琦勤\n\n服化設計統籌｜黃僅婷\n父親角色設計｜王蕓綺\n仲寧角色設計｜黃芷琳\n小仲寧角色設計｜吳霽千\n采柔角色設計｜李寈\n姊姊、客戶角色設計｜劉燕蓉\n姊夫、趙總編、書店老闆角色設計｜李佳容\n孫醫師、警察、職員、店經理、同事角色設計｜李若溱\n\n宣傳統籌｜游婉彤\n攝影｜陳宣如\n主視覺設計｜謝覺性\n文案｜陳奕臻\n企劃｜陳虹樺",
    poster:"@son_p",visual:"@son_v",stills:[],links:[]},
   {id:"2026w",season:"115 學年度冬季公演",title:"收信快樂",dates:"2026/12/12（六）・12/13（日）",venue:"政大傳院劇場",
    credits:[["原著", "A.R. Gurney《Love Letters》"], ["改編", "單承矩"]],
-   desc:"兩個人，從小學開始，用一生的時間寫信。\n\n宣傳理念：人生沒有永恆不變的真理。",
+   desc:"兩個人，從小學開始，用一生的時間寫信。\n\n人生沒有永恆不變的真理。",
    staff:"導演｜謝雨祺\n\n舞台監督｜陳怡均\n導演助理｜張玉又\n排練助理｜高意涵、謝宇萱\n\n李政國｜陳奕嘉\n陳淑芬｜黃芷琳\n\n舞台設計｜李寈\n舞台執行｜游婉彤、丁子涵、李若溱、施于涵、陳姸廷、吳亭儀、李欣庭\n\n燈光設計｜林庭如\n燈光執行｜張勛翔、羅可安、黃辰恩、高鈺鈞、吳霽千、黃安妤\n\n聲音設計｜張琦勤\n聲音執行｜邱昕儀、廖子銘、覃翰、杜晏綺、梁家恩\n\n服化設計統籌｜王蕓綺\n李政國角色設計｜陳奕臻\n陳淑芬角色設計｜李佳容\n\n宣傳統籌、線上企劃｜文亭云\n主視覺設計｜劉燕蓉\n企劃｜謝覺性\n攝影｜張育嘉\n文案｜陳宣如",
    poster:"@POSTER",visual:"@BANNER",stills:[],links:[]}
  ],
@@ -935,6 +943,7 @@ const Snd=(()=>{
   case'pick':tone(500,t,.12,'sine',.2,0,900);noise(t,.08,2000,.08);break;
   case'tear':crinkle(t,34,.5,.13,2600);noise(t,.45,2200,.07,.5,'bandpass',1500);break;
   case'pop':tone(520,t,.12,'sine',.18,0,880);break;
+  case'whoosh':noise(t,.16,1200,.07,.8,'bandpass',3200);break;
   case'meow':case'mew':{ // 溫柔的貓叫：柔和的音色、先往上再往下滑，帶一點點顫音
    const sh=n==='mew',d=(sh?.42:.7)+Math.random()*.12,p0=(sh?720:560)+Math.random()*60;
    const o=ac.createOscillator(),o2=ac.createOscillator(),vib=ac.createOscillator(),vg=ac.createGain(),g=ac.createGain(),g2=ac.createGain(),f=ac.createBiquadFilter();
@@ -1941,9 +1950,10 @@ function buildCampus(W,scene,Q,poster){
  sgn('演出入口\n上樓梯，往右走',2.4,1.2,-35.5,2.6,-5.3,{w:340,h:170,fs:34,bg:'#f4ead5',fg:'#c0523f'});
  R.spot({x:-35.5,z:-3.6,r:2.4,label:'看路標',icon:'🪧',id:'campusmap'});
  /* ---- 廣場擺設 ---- */
- // 公演立牌（歷屆公演）
- [['2025 冬季公演\n我為你押韻',-9],['2026 夏季公演\n小兒子',-4.8],['2026 冬季公演\n收信快樂',-.6]].forEach(([t,x],i)=>{
-  bx(B,.12,2.2,.12,x-.8,0,0,'#6b4a33');bx(B,.12,2.2,.12,x+.8,0,0,'#6b4a33');sgn(t,2.2,1.6,x,1.7,.1,{w:360,h:260,fs:40,bg:i==2?'#c0523f':'#f4ead5',fg:i==2?'#fbf3df':'#6b4a33'})});
+ // 公演立牌（歷屆公演）：自動用回憶廊的資料，最新三齣，這一季是紅色
+ {const L=CONFIG.memory,ord=L.map((m,i)=>i).filter(i=>L[i].title!==CONFIG.show.name).slice(-2).concat(L.findIndex(m=>m.title===CONFIG.show.name)).filter(i=>i>=0);
+  ord.forEach((mi,i)=>{const m=L[mi],x=-9+i*4.2,cur=m.title===CONFIG.show.name;
+   bx(B,.12,2.2,.12,x-.8,0,0,'#6b4a33');bx(B,.12,2.2,.12,x+.8,0,0,'#6b4a33');sgn(m.season.replace(' ','')+'\n《'+m.title+'》',2.2,1.6,x,1.7,.1,{w:400,h:260,fs:m.title.length>5?28:32,bg:cur?'#c0523f':'#f4ead5',fg:cur?'#fbf3df':'#6b4a33'})})}
  R.spot({x:-5,z:2.2,r:3.8,label:'看麥高芬的歷屆公演',icon:'🎭',id:'timeline'});
  // 路燈
  const lp=(x,y,z)=>{bx(B,.14,3.2,.14,x,y,z,'#3f4a4a');sp(B,.26,x,y+3.5,z,'#ffd58a',1,1.2,1,6,{j:0});G.add(sph(6),'#ffe3a0',mat(x,y+3.5,z,.22,.28,.22),{j:0});R.col({x,z,r:.3});
@@ -2244,16 +2254,23 @@ Eng.heightAt=heightAt;
 function setupInput(){
  const cv=$('gl');
  addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test((e.target||{}).tagName))return;const k=e.key.toLowerCase();keys[k]=true;
-  if(k===' '||k==='enter'||k==='f'){e.preventDefault();Game.act()}if(k==='v')Eng.toggleFP();if(k==='escape')Game.esc&&Game.esc()});
+  if(k===' '){e.preventDefault();if(Dlg.on)Dlg.next();else if(Cafe.seat)Game.act();else Game.jump()}
+  if(k==='f'||k==='enter'){e.preventDefault();e._used=Game.act()}
+  if(k==='x'&&!e.repeat)Game.punch();
+  if(k==='v')Eng.toggleFP();if(k==='escape')Game.esc&&Game.esc()});
+ // 視窗失去焦點時把按鍵全部放開，避免角色一直走或卡住
+ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;joy.x=joy.y=0});
  addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
  let drag=null;
  cv.addEventListener('pointerdown',e=>{Snd.resume();if(Graf.on&&Graf.down(e)){cv.setPointerCapture(e.pointerId);return}drag={id:e.pointerId,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
  cv.addEventListener('pointermove',e=>{if(Graf.on&&Graf.move(e))return;if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if((Eng.lock&&!Eng.camFree)||cineCam)return;
   Eng.yaw-=dx*.0052;Eng.pitch=clamp(Eng.pitch+dy*.0042*(Eng.fp?-1:1),Eng.fp?-1.45:-.55,Eng.fp?1.45:1.35)});
- let tap0=null;cv.addEventListener('pointerdown',e=>{tap0={x:e.clientX,y:e.clientY,t:performance.now()}});
+ let tap0=null;cv.addEventListener('pointerdown',e=>{tap0={x:e.clientX,y:e.clientY,t:performance.now()};const ae=document.activeElement;if(ae&&/INPUT|TEXTAREA/.test(ae.tagName))ae.blur()});
  cv.addEventListener('pointerup',e=>{Graf.up(e);drag=null;if(tap0&&!Graf.on&&Math.hypot(e.clientX-tap0.x,e.clientY-tap0.y)<8&&performance.now()-tap0.t<400)clickPick(e);tap0=null});cv.addEventListener('pointercancel',e=>{Graf.up(e);drag=null});
  cv.addEventListener('wheel',e=>{Eng.dist=clamp(Eng.dist+e.deltaY*.01,3,16)},{passive:true});
  // 搖桿
+ $('mjump').onpointerdown=e=>{e.preventDefault();Game.jump()};$('mpunch').onpointerdown=e=>{e.preventDefault();Game.punch()};
+ $('mrun').onclick=e=>{Eng.runT=!Eng.runT;e.currentTarget.classList.toggle('on',Eng.runT)};
  const j=$('joy'),knob=j.firstElementChild;let jid=null;
  const jm=e=>{const r=j.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=(e.clientX-cx)/(r.width/2),dy=(e.clientY-cy)/(r.height/2);const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}joy.x=dx;joy.y=dy;knob.style.transform=`translate(${dx*30}px,${dy*30}px)`};
  j.addEventListener('pointerdown',e=>{jid=e.pointerId;j.setPointerCapture(jid);jm(e);Snd.resume()});
@@ -2329,7 +2346,7 @@ function update(dt,t){
   if(keys['q'])Eng.yaw+=dt*1.8;if(keys['e'])Eng.yaw-=dt*1.8;
   if(keys['r'])Eng.pitch=clamp(Eng.pitch-dt*1.5,Eng.fp?-1.45:-.55,Eng.fp?1.45:1.35);if(keys['t'])Eng.pitch=clamp(Eng.pitch+dt*1.5,Eng.fp?-1.45:-.55,Eng.fp?1.45:1.35)}
  let l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;l=1}
- const run=keys['shift']?1.55:1,sp=l*5.2*run;
+ const run=(keys['shift']||Eng.runT)?1.6:1,sp=l*5.2*run;
  const sy=Math.sin(Eng.yaw),cyw=Math.cos(Eng.yaw);
  const wx=(mx*cyw+mz*sy)*sp,wz=(-mx*sy+mz*cyw)*sp;
  let px=pl.x+wx*dt,pz=pl.z+wz*dt;if(W.boatMoving){px=pl.x;pz=pl.z}else{
@@ -2346,7 +2363,8 @@ function update(dt,t){
  pl.speed=Math.hypot(px-pl.x,pz-pl.z)/Math.max(dt,1e-4);
  if(l>.1&&!Eng.sit){const target=Math.atan2(wx,wz);let d=target-pl.ry;d=Math.atan2(Math.sin(d),Math.cos(d));pl.ry+=d*Math.min(1,dt*12)}
  pl.x=px;pl.z=pz;const ty=W.boatMoving?W.boat.position.y+.58:Eng.sit?heightAt(a,pl.x,pl.z,pl.y)+(Eng.sitDy==null?-.28:Eng.sitDy):heightAt(a,pl.x,pl.z,pl.y);pl.y+=(ty-pl.y)*Math.min(1,dt*16);
- pl.obj.position.set(pl.x,pl.y,pl.z);pl.obj.rotation.y=pl.ry;animChar(pl.obj,dt,Eng.sit?0:pl.speed,t);
+ if(pl.jy>0){pl.jv-=18*dt;pl.jy+=pl.jv*dt;if(pl.jy<=0){pl.jy=0;pl.jv=0}}
+ pl.obj.position.set(pl.x,pl.y+(pl.jy||0),pl.z);pl.obj.userData.air=(pl.jy||0)>.05;pl.obj.rotation.y=pl.ry;animChar(pl.obj,dt,Eng.sit?0:pl.speed,t);
  if(pl.speed>.5&&!Eng.sit){pl.stepT=(pl.stepT||0)-dt;if(pl.stepT<=0){Snd.play('step');pl.stepT=.42/run}}
  applyEnv();
  Eng.ambT=(Eng.ambT||0)-dt;if(Eng.ambT<=0){Eng.ambT=.12;const cp_=a==='world'||a==='campus';Snd.surf=R.surfAt?R.surfAt(pl.x,pl.z,pl.y):(a==='world'?(W.boatMoving?'wood':Math.hypot(pl.x,pl.z)>ISLE-9?'sand':'grass'):(a==='theatre'?(pl.y>.8?'wood':'carpet'):(a==='hall'?'tile':'wood')));
@@ -2376,8 +2394,11 @@ function update(dt,t){
  // 城鎮門
  if(a==='world'&&!Eng.lock&&!cineCam&&performance.now()>(Eng.doorCool||0)){for(const d of W.doors){if(Math.hypot(pl.x-d.x,pl.z-d.z)<1.25){Game.enterBuilding(d.id);break}}}
  // 郵票
- for(const s of STAMPOBJ){const vis=s.d.room===a&&!s.got&&(s.d.i!==8||night(Eng.hour())>.5);s.g.visible=vis;if(!vis)continue;s.g.rotation.y=t*1.8;s.g.position.y=s.y+Math.sin(t*2+s.d.i)*.12;
-  if(!Eng.lock&&!cineCam&&Math.hypot(pl.x-s.d.x,pl.z-s.d.z)<1.35&&performance.now()>(s.cd||0)){s.got=true;claimStamp(s.d.i,s)}}
+ // 郵票：還沒拿到的會發光、走過去就挑戰；拿到之後光會熄掉，但郵票一直留在原地，靠近可以再玩一次
+ for(const s of STAMPOBJ){const own=P.stamps.includes(s.d.i),vis=s.d.room===a&&(own||(!s.got&&(s.d.i!==8||night(Eng.hour())>.5)));s.g.visible=vis;if(!vis)continue;
+  const gl=s.g.children[1];if(gl)gl.visible=!own;const mm=s.g.children[0];if(mm&&mm.material.opacity!==(own?.8:1)){mm.material.opacity=own?.8:1;mm.material.transparent=true}
+  s.g.rotation.y=t*(own?.6:1.8);s.g.position.y=s.y+Math.sin(t*2+s.d.i)*(own?.05:.12);
+  if(!own&&!s.got&&!Eng.lock&&!cineCam&&Math.hypot(pl.x-s.d.x,pl.z-s.d.z)<1.35&&performance.now()>(s.cd||0)){s.got=true;claimStamp(s.d.i,s)}}
  // NPC
  for(const n of NPCS){const vis=n.d.room===a;n.o.visible=vis;if(!vis)continue;
   if(n.busy){n.y=heightAt(a,n.x,n.z);n.o.position.set(n.x,n.y,n.z);n.o.rotation.y=n.ry;animChar(n.o,dt,n.spd||0,t);continue}
@@ -2453,6 +2474,7 @@ Eng.near=()=>{ // 最近的互動點
  const a=Eng.area;let best=null,bd=1e9;
  for(const s of W.spots){if(s.room!==a)continue;const d=Math.hypot(pl.x-s.x,pl.z-s.z);if(d<s.r&&d<bd){bd=d;best={kind:'spot',s,label:s.label,icon:s.icon}}}
  for(const n of NPCS){if(n.d.room!==a||!n.d.talk)continue;const d=Math.hypot(pl.x-n.x,pl.z-n.z);if(d<2.7&&d-0.8<bd){bd=d-.8;best={kind:'npc',n,label:'和'+n.d.name+'說話',icon:'💬'}}}
+ for(const s of STAMPOBJ){if(s.d.room!==a||!P.stamps.includes(s.d.i))continue;const d=Math.hypot(pl.x-s.d.x,pl.z-s.d.z);if(d<1.8&&d<bd){bd=d;best={kind:'stamp',i:s.d.i,label:'再玩一次「'+CH[s.d.i].t+'」',icon:'🎫'}}}
  if(Achi.obj&&Achi.s.area===a){const d=Math.hypot(pl.x-Achi.s.x,pl.z-Achi.s.z);if(d<2.2&&d-.7<bd){bd=d-.7;const met=P.achi&&P.achi.met;best={kind:'cat',label:met?'摸摸阿奇':'看看這隻黑貓',icon:'🐈‍⬛'}}}
  return best};
 
@@ -2461,7 +2483,7 @@ Eng.near=()=>{ // 最近的互動點
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmtD=ts=>{const d=new Date(ts);return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
 const Modal={
- open(html,mount,opt={}){const m=$('modal');m.innerHTML=`<div class="sheet" style="${opt.w?'width:'+opt.w:''}"><button class="x" aria-label="關閉">✕</button>${html}</div>`;m.classList.remove('hide');Eng.lock++;Modal.on=true;
+ open(html,mount,opt={}){const m=$('modal');m.innerHTML=`<div class="sheet" style="${opt.w?'width:'+opt.w:''}"><button class="x" aria-label="關閉">✕</button>${html}</div>`;m.classList.remove('hide');if(!Modal.on)Eng.lock++;Modal.on=true;
   m.querySelector('.x').onclick=Modal.close;m.onclick=e=>{if(e.target===m)Modal.close()};mount&&mount(m.firstChild);Snd.play('click')},
  close(){if(!Modal.on)return;$('modal').classList.add('hide');$('modal').innerHTML='';Modal.on=false;Eng.lock=Math.max(0,Eng.lock-1);Modal.onclose&&Modal.onclose();Modal.onclose=null}
 };
@@ -2591,7 +2613,7 @@ let WALL=[];
 async function refreshWall(){try{WALL=await Store.wall()}catch(e){WALL=seedsOnly()}
  if(W.wallMeshes)W.wallMeshes.forEach((m,i)=>{const l=WALL[i];m.visible=!!l;if(l){const pc=['#f6edd6','#f7d3d6','#d9e2ee','#e3eed2','#2f3a68'][l.paper%5];m.material.color.set(pc);[.96,.96,.92,.86].forEach((k,j)=>{m.children[j]&&m.children[j].material.color.set(pc).multiplyScalar(k)})}})}
 const seedsOnly=()=>SEEDS.map((s,i)=>Object.assign({kind:'public',seed:true,ts:Date.UTC(2026,9,1)+i*3600e3,arriveAt:0,uid:'seed'},s));
-function openWrite(pre={}){
+function openWrite(pre={}){readBack=0;
  let paper=pre.paper!==undefined?pre.paper:(+(localStorage.getItem('mgf3d_paper'))||0),sealed=false;
  const draft=pre.text||localStorage.getItem('mgf3d_draft')||'';
  Modal.open(`<h2>寫一封信</h2><p class="d">寫給誰都可以。署名可以留空，就是匿名的信。</p>
@@ -2649,17 +2671,19 @@ function sendFx(paper,text,to,by,sealed,doc){
   qdone('post');if(!P.stamps.includes(11))claimStamp(11);Game.refreshSent(true);refreshWall()});
 }
 /* ---- 信件牆列表 ---- */
-async function openWall(){
+async function openWall(){readBack=0;
  Modal.open(`<h2>來信牆</h2><p class="d">大家寄來的信。點一封，沿著虛線撕開。</p><div class="tabs"><button class="chip on" id="t1">全部來信</button><button class="chip" id="t2">我寄出的</button><button class="chip" id="t3">寫一封</button></div><div id="wl" class="grid"><span class="tiny">載入中…</span></div>`,async m=>{
   m.querySelector('#t3').onclick=()=>{Modal.close();openWrite()};
   const render=(rows,mine)=>{const wl=m.querySelector('#wl');if(!rows.length){wl.innerHTML='<span class="tiny">這裡還沒有信。</span>';return}
    wl.innerHTML=rows.map((l,i)=>{const arrived=(l.arriveAt||0)<=Date.now();return `<button class="lcard ${l.uid===Store.uid&&!l.seed?'me':''} ${l.kind==='sealed'?'lock':''}" data-i="${i}"><span class="m">${l.kind==='sealed'?'🔒':'✉️'} 給 ${esc(l.to)} ${l.uid===Store.uid&&!l.seed?'· 我的':''}</span><span class="pv">${l.kind==='sealed'?'加密的信':((l.uid===Store.uid&&!l.seed)||(P.opened&&P.opened[l.id||('s'+l.ts)])?esc(l.text):'✉️ 還沒拆開的信，沿著虛線撕開才看得到')}</span><span class="m">${esc(l.by||'匿名')} · ${fmtD(l.ts)}${arrived?'':' · 運送中…'}</span></button>`}).join('');
-   wl.querySelectorAll('.lcard').forEach(b=>b.onclick=()=>{const l=rows[+b.dataset.i];if(l.kind==='sealed'&&!mine){return}Modal.close();openRead(l)})};
+   wl.querySelectorAll('.lcard').forEach(b=>b.onclick=()=>{const l=rows[+b.dataset.i];if(l.kind==='sealed'&&!mine){return}Modal.close();readBack=1;openRead(l)})};
   await refreshWall();render(WALL,false);
   m.querySelector('#t1').onclick=e=>{m.querySelectorAll('.tabs .chip').forEach(c=>c.classList.remove('on'));e.target.classList.add('on');render(WALL,false)};
   m.querySelector('#t2').onclick=async e=>{m.querySelectorAll('.tabs .chip').forEach(c=>c.classList.remove('on'));e.target.classList.add('on');m.querySelector('#wl').innerHTML='<span class="tiny">載入中…</span>';render(await Store.mine(),true)}})}
 /* ---- 讀信 ---- */
+let readBack=0; // 從來信牆點進來的信：關掉時回到來信牆
 function openRead(l,opts={}){
+ setTimeout(()=>{const prev=Modal.onclose;Modal.onclose=()=>{prev&&prev();if(readBack)setTimeout(()=>{if(!Modal.on&&!Dlg.on&&readBack){readBack=0;openWall()}},30)}},0);
  const mine=l.uid===Store.uid&&!l.seed,canDel=mine||Store.admin;let torn=mine||opts.torn;
  const view=async()=>{
   const h=await Store.hearts(l.id);
@@ -2940,8 +2964,11 @@ function gameSync(){
   const box=m_.querySelector('#syb');
   let list=rows;if(!online&&reveal){list=FAKE.slice(0,4+round%4).map((w,i)=>({uid:'f'+i,name:'鎮上居民',w:FAKE[(i*3+round)%FAKE.length]}));if(mine)list.push(mine)}
   const people=new Set(list.map(r=>r.uid)).size;
+  const key=round+'|'+reveal+'|'+(mine?mine.w:'')+'|'+(online?'':'off');
+  if(box.dataset.k===key){const c=box.querySelector('.sylive');if(c)c.textContent=(reveal?'下一題 '+left+' 秒後':(online?'已有 '+people+' 人回答　':'')+'剩 '+left+' 秒');return}
+  box.dataset.k=key;
   if(!reveal){
-   box.innerHTML=`<p style="font-size:18px;text-align:center;margin:8px 0">${esc(prompt)}</p><p class="tiny" style="text-align:center">${online?'已有 '+people+' 人回答':'（單機模式）'}　剩 ${left} 秒</p>`+(mine?`<p style="text-align:center;font-size:20px;color:var(--red)">你寫了「${esc(mine.w)}」，等大家一起揭曉…</p>`:`<div class="row"><input id="syi" maxlength="8" class="txt" placeholder="最多 8 個字" style="max-width:200px;text-align:center"><button class="btn sm" id="syg">寫好了</button></div>`);
+   box.innerHTML=`<p style="font-size:18px;text-align:center;margin:8px 0">${esc(prompt)}</p><p class="tiny sylive" style="text-align:center">${online?'已有 '+people+' 人回答　':''}剩 ${left} 秒</p>`+(mine?`<p style="text-align:center;font-size:20px;color:var(--red)">你寫了「${esc(mine.w)}」，等大家一起揭曉…</p>`:`<div class="row"><input id="syi" maxlength="8" class="txt" placeholder="最多 8 個字" style="max-width:200px;text-align:center"><button class="btn sm" id="syg">寫好了</button></div>`);
    const g=box.querySelector('#syg');if(g){const inp=box.querySelector('#syi');inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')g.click()};g.onclick=()=>{const w=inp.value.trim().slice(0,8);if(!w)return;if(isBad(w)){toast('換一個詞吧');return}
      mine={uid:Store.uid,name:P.name,r:round,w,ts:Date.now()};qdone('game');if(online)fs.collection('m3_sync').doc(round+'_'+Store.uid).set(mine).catch(()=>{});draw()};if(!box.dataset.f){box.dataset.f=1;inp.focus()}}
   }else{
@@ -2949,7 +2976,7 @@ function gameSync(){
    const same=mine?(cnt[mine.w]||[]).length-1:0;
    box.dataset.f='';
    box.innerHTML=`<p style="font-size:16px;text-align:center;margin:6px 0">${esc(prompt)}</p>`+(ws.length?ws.slice(0,8).map(([w,n])=>`<div class="q ${mine&&mine.w===w?'done':''}" style="text-decoration:none"><b style="width:auto;padding:0 8px">${n.length}</b><span style="text-decoration:none"><b style="width:auto;border:0;background:none;display:inline">${esc(w)}</b>　<span class="tiny">${esc(n.slice(0,4).join('、'))}</span></span></div>`).join(''):'<p class="tiny" style="text-align:center">這一回沒有人回答。</p>')+
-    (mine?`<p style="text-align:center;margin:10px 0 2px;color:var(--red)">${same>0?'有 '+same+' 個人和你想的一樣 💞':'這次只有你這樣想。不同，也是一種開始。'}</p>`:'')+`<p class="tiny" style="text-align:center">下一題 ${left} 秒後</p>`}};
+    (mine?`<p style="text-align:center;margin:10px 0 2px;color:var(--red)">${same>0?'有 '+same+' 個人和你想的一樣 💞':'這次只有你這樣想。不同，也是一種開始。'}</p>`:'')+`<p class="tiny sylive" style="text-align:center">下一題 ${left} 秒後</p>`}};
  Modal.open(`<h2>默契信</h2><p class="d">所有在線的人，每 40 秒回答同一題。看看誰和你想的一樣。${online?'':'（目前是單機模式，答案是鎮上居民的）'}</p><div id="syb"></div>`,m=>{m_=m;draw();timer=setInterval(draw,1000);Modal.onclose=()=>{dead=true;clearInterval(timer);if(unsub)unsub()}})}
 
 /* ---- challenge.js ---- */
@@ -3473,13 +3500,15 @@ const Soc={on:false,local:false,started:false,peers:{},pub:[],dm:{},tab:'pub',cu
   document.body.appendChild(el);Soc.el=el;
   el.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{Soc.tab=b.dataset.t;if(Soc.tab!=='dm')Soc.cur=null;Soc.render()});
   $('chx').onclick=()=>Soc.toggle(false);$('chs').onclick=()=>Soc.send();
-  $('chi').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();Soc.send()}});
+  $('chi').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){if(e.isComposing||e.keyCode===229)return;e.preventDefault();Soc.send();setTimeout(()=>{$('chi').value=''},60)}});
   $('bc').onclick=()=>Soc.toggle();
   // 角落即時訊息＋常駐輸入列
   const fd=document.createElement('div');fd.id='feed';document.body.appendChild(fd);Soc.feedEl=fd;
   const sb=document.createElement('div');sb.id='sayb';sb.innerHTML='<input id="sayi" maxlength="40" autocomplete="off" placeholder="對大家說一句話（Enter 送出）">';document.body.appendChild(sb);Soc.sayb=sb;
-  const si=$('sayi');si.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();Soc.say(si.value);si.value='';si.blur()}else if(e.key==='Escape'){si.blur()}});
-  addEventListener('keydown',e=>{if(e.key==='Enter'&&P.started&&!Modal.on&&!Dlg.on&&!cineCam&&document.activeElement!==si&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){e.preventDefault();si.focus()}});
+  // 中文輸入法（例如 Mac 注音）選字時按的 Enter 不算送出；送出後等輸入法結束再清空，避免字留在框裡
+  const si=$('sayi');let comp=false;si.addEventListener('compositionstart',()=>comp=true);si.addEventListener('compositionend',()=>setTimeout(()=>comp=false,0));
+  si.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){if(comp||e.isComposing||e.keyCode===229)return;e.preventDefault();const v=si.value;si.value='';si.blur();Soc.say(v);setTimeout(()=>{si.value=''},60)}else if(e.key==='Escape'){si.blur()}});
+  addEventListener('keydown',e=>{if(e.key==='Enter'&&!e._used&&!e.isComposing&&!Cafe.seat&&!Achi.busy&&P.started&&!Modal.on&&!Dlg.on&&!cineCam&&document.activeElement!==si&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){e.preventDefault();si.focus()}});
   setInterval(()=>{sb.style.display=(P.started&&!Soc.open&&!Modal.on&&!Dlg.on&&!Cafe.seat&&!Achi.busy&&!document.getElementById('gm'))?'block':'none';document.body.classList.toggle('seated',!!Cafe.seat);document.body.classList.toggle('catting',!!Achi.busy)},300);
   // 點玩家
   const cv=$('gl');let d0=null;cv.addEventListener('pointerdown',e=>{d0={x:e.clientX,y:e.clientY,t:performance.now()}});
@@ -3634,7 +3663,7 @@ const Cafe={seat:null,prop:null,steam:[],cup:null,
   pl.x=s.x-Math.sin(s.ry)*.06;pl.z=s.z-Math.cos(s.ry)*.06;pl.ry=s.ry;Eng.sit=true;Eng.sitDy=s.sh+.05-.68;pl.obj.userData.sitting=true;Cafe.seat=s;Snd.play('pop');
   Cafe.ui();if(!P.cafeHint){P.cafeHint=1;Store.saveP(P);toast('點一杯熱的，慢慢喝到杯底。想離開就按「起身」')}},
  stand(){
-  const s=Cafe.seat;if(!s)return;Cafe.seat=null;Eng.sit=false;Eng.sitDy=null;pl.obj.userData.sitting=false;
+  const s=Cafe.seat;if(!s)return;Eng.setCine&&cineCam&&!Game.fishBusy&&Eng.setCine(null);Cafe.seat=null;Eng.sit=false;Eng.sitDy=null;pl.obj.userData.sitting=false;
   pl.x=s.x-Math.sin(s.ry)*.75;pl.z=s.z-Math.cos(s.ry)*.75;Cafe.clear();const u=$('cafe');if(u)u.remove()},
  clear(){if(Cafe.prop){Cafe.prop.parent&&Cafe.prop.parent.remove(Cafe.prop);Cafe.prop=null}Cafe.steam=[];Cafe.cup=null},
  temp(){const c=Cafe.cup;if(!c)return'';const e=(performance.now()-c.t0)/1000;return e<12?'hot':e<28?'warm':'cool'},
@@ -3642,7 +3671,7 @@ const Cafe={seat:null,prop:null,steam:[],cup:null,
   const c=Cafe.cup,n=(P.cups||[]).length,T={hot:'🔥 熱的',warm:'🌤️ 溫的',cool:'🧊 涼了'}[Cafe.temp()]||'';
   u.innerHTML=c?`<div class="t">${CAFE_ITEMS[c.k].e} ${T}　・　還剩 ${3-c.sips} 口　・　喝到杯底，看看杯底寫了什麼</div><button data-k="sip">${c.k==='snack'?'🍪 吃一口':'😋 喝一口'}</button><button data-k="talk">💬 聊天話題</button><button data-k="cups">📜 杯底的話 ${n}/8</button><button class="up" data-k="up">🚶 起身</button>`
    :`<div class="t">從包包裡拿點什麼出來吧。（傳院大廳沒有插座，熱的都裝在保溫瓶裡——而熱的東西，不會一直是熱的。）</div>${Object.entries(CAFE_ITEMS).map(([k,v])=>`<button data-k="${k}">${v.e} ${v.n}</button>`).join('')}<button data-k="talk">💬 聊天話題</button><button data-k="cups">📜 杯底的話 ${n}/8</button><button class="up" data-k="up">🚶 起身</button>`;
-  u.querySelectorAll('button').forEach(b=>b.onclick=()=>{Snd.resume();if(Eng.lock)return;const k=b.dataset.k;if(k==='up')Cafe.stand();else if(k==='talk')Cafe.talk();else if(k==='sip')Cafe.sip();else if(k==='cups')Cafe.book();else Cafe.order(k)})},
+  u.querySelectorAll('button').forEach(b=>b.onclick=()=>{Snd.resume();b.blur();const k0=b.dataset.k;if(k0==='up'){if(!Game.fishBusy)Cafe.stand();return}if(Eng.lock)return;const k=b.dataset.k;if(k==='up')Cafe.stand();else if(k==='talk')Cafe.talk();else if(k==='sip')Cafe.sip();else if(k==='cups')Cafe.book();else Cafe.order(k)})},
  order(k){
   const s=Cafe.seat;if(!s)return;Cafe.clear();Snd.play('pop');
   const g=new T.Group(),dx=Math.sin(s.ry),dz=Math.cos(s.ry);g.position.set(s.x+dx*(s.top>1?.78:.5),s.top,s.z+dz*(s.top>1?.78:.5));g.rotation.y=s.ry;
@@ -3684,7 +3713,7 @@ const Cafe={seat:null,prop:null,steam:[],cup:null,
   if(Soc.on){Soc.tab='pub';Soc.toggle(true);setTimeout(()=>{const i=$('chi');if(i){i.value=tp;i.focus()}},80)}else toast('話題：'+tp)},
  tick(dt){
   if(Cafe.seat){if(Eng.area!=='hall'){Cafe.seat=null;Eng.sit=false;Eng.sitDy=null;pl.obj.userData.sitting=false;Cafe.clear();const u=$('cafe');if(u)u.remove();return}
-   const mv=keys.w||keys.a||keys.s||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright||Math.hypot(joy.x,joy.y)>.4;if(mv&&!Modal.on&&!Dlg.on&&!Soc.open&&!Eng.lock&&document.activeElement.tagName!=='INPUT'){Cafe.stand();return}
+   const mv=keys.w||keys.a||keys.s||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright||Math.hypot(joy.x,joy.y)>.4;if(mv&&!Modal.on&&!Dlg.on&&!Soc.open&&!Game.fishBusy){const ae=document.activeElement;if(ae&&ae.tagName==='INPUT')ae.blur();Cafe.stand();return}
    const tp=Cafe.temp();if(Cafe.cup&&tp!==Cafe.cup.lastT){Cafe.cup.lastT=tp;Cafe.ui()}}
   const tp=Cafe.temp(),k=tp==='hot'?1:tp==='warm'?.45:0,empty=Cafe.cup&&Cafe.cup.sips>=3;
   for(const q of Cafe.steam){q.p=(q.p+dt*.45)%1;q.s.position.y=.15+q.p*.35;q.s.position.x=Math.sin(q.p*6+q.s.id)*.02;q.s.material.opacity=empty?0:Math.sin(q.p*PI)*.55*k;const sc=.1+q.p*.14;q.s.scale.set(sc,sc,1)}}};
@@ -3886,9 +3915,10 @@ async function npcGiveFish(){
 setInterval(()=>{
  if(typeof Eng==='undefined'||!P.started)return;
  const busy=Dlg.on||Modal.on||Game.fx||(Eng.anims>0)||Achi.anim||Game.fishBusy||Graf.on||($('skip')&&!$('skip').classList.contains('hide'))||document.getElementById('sfx');
- const stuck=(Eng.lock>0||cineCam)&&!busy&&!Eng.sit&&!Achi.busy;
+ const fading=$('fade')&&getComputedStyle($('fade')).opacity>.05;
+ const stuck=(Eng.lock>0||cineCam)&&!busy&&!fading&&!Achi.busy&&!(cineCam&&Eng.sit&&Eng.area==='theatre');
  Eng.stuckT=stuck?(Eng.stuckT||0)+1:0;
- if(Eng.stuckT>=4){Eng.stuckT=0;Diag.log('unstuck','lock='+Eng.lock+' cine='+!!cineCam);Eng.lock=0;Eng.setCine(null);if(pl.obj)pl.obj.userData.act=null}},1000);
+ if(Eng.stuckT>=2){Eng.stuckT=0;Diag.log('unstuck','lock='+Eng.lock+' cine='+!!cineCam);Eng.lock=0;Eng.setCine(null);if(pl.obj)pl.obj.userData.act=null}},1000);
 
 /* ================= 地圖：右上角小地圖（以你為中心）＋點開看整張地圖 ================= */
 const MapUI={bg:{},S:4,el:null,
@@ -3952,11 +3982,19 @@ const Game={
  toast,
  esc(){if(Graf.on&&!Dlg.on&&!Modal.on)Graf.exit();else if(Dlg.on)Dlg.end();else if(Modal.on)Modal.close()},
  act(){
-  if(!P.started)return;
-  if(Dlg.on){Dlg.next();return}if(Modal.on||Eng.lock)return;
-  if(Cafe.seat){if(!Eng.lock)Cafe.stand();return}
-  const n=Eng.near();if(!n)return;Snd.resume();Snd.play('click');
-  if(n.kind==='npc')Game.talk(n.n.d.talk,n.n);else if(n.kind==='cat')Achi.interact();else Game.spot(n.s)},
+  if(!P.started)return false;
+  if(Dlg.on){Dlg.next();return true}
+  if(Cafe.seat&&!Game.fishBusy&&!Modal.on){Cafe.stand();return true} // 起身永遠可以，不受其他鎖影響
+  if(Modal.on||Eng.lock)return false;
+  const n=Eng.near();if(!n)return false;Snd.resume();Snd.play('click');
+  if(n.kind==='npc')Game.talk(n.n.d.talk,n.n);else if(n.kind==='cat')Achi.interact();else if(n.kind==='stamp')replayCH(n.i);else Game.spot(n.s);return true},
+ jump(){if(!P.started||Modal.on||Eng.lock||cineCam||Eng.sit||W.boatMoving)return;if((pl.jy||0)>.01)return;pl.jv=6.2;pl.jy=.001;Snd.play('step')},
+ punch(){if(!P.started||Modal.on||Eng.lock||cineCam||Eng.sit)return;const u=pl.obj.userData;if(u.punch>0)return;u.punch=.35;u.punchArm=(u.punchArm?0:1);Snd.play('whoosh');
+  // 打到旁邊的人：他們會嚇一跳
+  const fx=pl.x+Math.sin(pl.ry)*1.1,fz=pl.z+Math.cos(pl.ry)*1.1;
+  const n=NPCS.find(n=>n.d.room===Eng.area&&!n.d.obj&&!n.busy&&Math.hypot(n.x-fx,n.z-fz)<1.1);
+  if(n){setTimeout(()=>{Snd.play('pop');n.o.userData.flinch=.5;const L=['哎唷！','欸！幹嘛啦！','嚇我一跳……','（揉揉肩膀）','劇場裡不可以打架喔。'];toast(n.d.name+'：「'+L[(Math.random()*L.length)|0]+'」')},150)}
+  else if(Achi.obj&&Achi.s.area===Eng.area&&Math.hypot(Achi.s.x-fx,Achi.s.z-fz)<1.2){setTimeout(()=>{Snd.play('mew');Achi.mouth=.5;Achi.s.mode='walk';const an=Math.atan2(Achi.s.x-pl.x,Achi.s.z-pl.z);Achi.s.tx=Achi.s.x+Math.sin(an)*3;Achi.s.tz=Achi.s.z+Math.cos(an)*3;Achi.tip3('（瞪）');toast('阿奇不高興地跑開了。')},150)}},
  nearMailbox(){return Eng.area==='post'?W.mailIn:(Eng.area==='world'?NPCS.find(n=>n.d.id==='mail3').o:(Eng.area==='campus'?NPCS.find(n=>n.d.id==='mail2').o:null))},
  onArea(a){const n=AREA_NAME[a];if(P.started)placeCard(n[0],n[1]);hud();Achi.onArea(a)},
  spot(s){
@@ -3975,7 +4013,7 @@ const Game={
    case'phone':doPhone();break;
    case'info':openInfo(0);break;
    case'poster':Dlg.say('海報',['《收信快樂》\n麥高芬劇團 '+CONFIG.show.season,CONFIG.show.dates+'　'+CONFIG.show.ticketOpen],[{t:'看演出資訊',fn:()=>openInfo(0)},{t:'關上',alt:1}]);break;
-   case'timeline':Dlg.say('歷屆公演立牌',['2025 冬季公演《我為你押韻》\n2026 夏季公演《小兒子》\n2026 冬季公演《收信快樂》','想看海報和更多資料，可以到一樓大廳的「麥高芬回憶廊」。'],[{t:'帶我去回憶廊',fn:()=>Game.warp('memory')},{t:'先不用',alt:1}]);break;
+   case'timeline':Dlg.say('歷屆公演立牌',[CONFIG.memory.slice().reverse().slice(0,4).map(m=>m.season+'《'+m.title+'》').join('\n'),'想看海報和更多資料，可以到一樓大廳的「麥高芬回憶廊」。'],[{t:'帶我去回憶廊',fn:()=>Game.warp('memory')},{t:'先不用',alt:1}]);break;
    case'campusmap':Dlg.say('路標',['這裡是政大傳播學院。','先爬一段樓梯，再穿過白色的牆，走過一小段柏油路，再爬一段樓梯，就到傳院前門平台了。','前門當日不開放：從前門往右手邊走，沿著小走廊一直走，盡頭就是「演出入口」後門。','進門之後穿過走廊，到大廳，沿著樓梯走上二樓，就是傳院劇場。']);break;
    case'collegedoor':Dlg.say('傳播學院',['大門當日不開放，門是鎖著的。','從門口往南走回樓梯口，直直走進小走廊，走到底左手邊，就是後門（演出入口）。']);break;
    case'overlook':Dlg.say('前門平台',['爬完樓梯，這裡就是傳院的前門平台。','大門在左手邊，今天不開放。直直往前走進小走廊，走到底，左手邊就是後門。']);break;
