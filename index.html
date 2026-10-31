@@ -2,7 +2,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Chocolate+Classical+Sans&family=Cactus+Classical+Serif&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
 <style>:root{--paper:#f4ead5;--paper2:#ecdcbc;--ink:#4a3a2c;--ink2:#7b6652;--red:#c0523f;--teal:#4f8791;--sage:#8aa37b;--gold:#d9a441;--line:#cdb994;--shadow:0 6px 18px rgba(60,40,20,.25)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:#1b2147;color:var(--ink);font-family:'Chocolate Classical Sans','Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;inset:0;width:100%;background:#1b2147;color:var(--ink);font-family:'Chocolate Classical Sans','Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 button{font-family:inherit;color:inherit;cursor:pointer}
 .hide{display:none!important}
@@ -2232,6 +2232,10 @@ function initEngine(look){
   const R=W.rooms[d.room==='world'?'world':d.room];const gp=d.room==='world'?W.outG:R.g;gp.add(g);const y=(R.heightAt?R.heightAt(d.x,d.z):0)+1.1;g.position.set(d.x,y,d.z);
   STAMPOBJ.push({d,g,y,got:false})}
  addEventListener('resize',onResize);onResize();
+ addEventListener('orientationchange',()=>setTimeout(onResize,300));if(window.visualViewport)visualViewport.addEventListener('resize',()=>setTimeout(onResize,50));
+ document.addEventListener('focusout',()=>setTimeout(fixScroll,100));setInterval(()=>{fixScroll();const c=renderer.domElement;if(Math.abs(c.clientWidth-innerWidth)>2||Math.abs(c.clientHeight-innerHeight)>2)onResize()},1500);
+ // 手機長時間玩、或切到別的 App 再回來，瀏覽器可能把 3D 畫面收走：先存檔，再自動重新載入（進度都在）
+ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();Diag.log('webgl','context lost');try{Store.saveP(P)}catch(_){}setTimeout(()=>location.reload(),1500)});
  setupInput();
  // 所有招牌（之後檢查有沒有被樹、路燈、屋簷擋住用）
  W.signs=[];scene.traverse(o=>{const m=o.material;if(o.isMesh&&m&&m.map&&m.map.userData&&m.map.userData.sign)W.signs.push(o)});
@@ -2247,7 +2251,9 @@ function setLook(look){
  if(pl.obj){const u=pl.obj.userData;keep={sitting:u.sitting,crouch:u.crouch,act:u.act};scene.remove(pl.obj);if(Achi._prop)Achi.prop(null);safe('free',()=>freeChar(pl.obj))}
  pl.obj=makeChar({sp:look.sp,g:look.g||'f',hs:look.h,ci:look.c,body:OUTC[(look.c||0)%OUTC.length],hair:HAIRC[(look.hc==null?look.c:look.hc)%HAIRC.length],acc:look.acc||[]});scene.add(pl.obj);
  if(keep)Object.assign(pl.obj.userData,keep);pl.obj.position.set(pl.x,pl.y,pl.z);pl.obj.rotation.y=pl.ry}
-function onResize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}
+function onResize(){const w=innerWidth,h=innerHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();fixScroll()}
+// 手機：鍵盤收起、旋轉螢幕、網址列伸縮之後，頁面可能被往上推，把它拉回原位
+function fixScroll(){if(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;if(scrollX||scrollY)scrollTo(0,0);document.documentElement.scrollTop=document.body.scrollTop=0}
 const heightAt=(a,x,z,y)=>{const R=W.rooms[a];return R&&R.heightAt?R.heightAt(x,z,y):0};
 Eng.heightAt=heightAt;
 /* ---- 輸入 ---- */
@@ -3746,9 +3752,14 @@ const ACHI_SPOTS={
  campus:[[30.5,-15,1],[10,-14],[-40,-21],[-46,-8],[-20,20],[0,30],[-30,10]],
  hall:[[434,-8],[446,12],[429,0],[450,-3],[440,20],[449,-22],[436,-20]],
  world:[[4,8],[-12,-6],[13,-8],[8,14],[-6,12],[-28,22],[20,-15],[-15,-15],[25,12]],
- post:[[203,2],[196,-1],[205,-3]],gallery:[[323,3],[317,-1],[325,-2]],office:[[383,2],[376,1]],memory:[[504,5],[496,-2],[500,6]],theatre:[[260,10],[254,8],[266,8]]};
+ post:[[203,2],[196,-1],[205,-3]],gallery:[[323,3],[317,-1],[325,-2]],office:[[383,2],[376,1]],memory:[[504,5],[496,-2],[500,6]]}; // 劇場裡不准有貓
 const Achi={obj:null,s:null,away:0,tip:null,
  init(){if(Achi.obj||!W)return;Achi.obj=makeCat();scene.add(Achi.obj);Achi.s={area:'campus',x:30.5,z:-15,ry:-PI/2,mode:'sleep',timer:40,tx:30.5,tz:-15,anchor:{x:29.5,z:-14.4,r:1.6},follow:0}},
+ // 走一小步：撞到東西會沿著邊滑開，滑不動就停下（貓不是幽靈，不能穿牆、穿桌子、穿人）
+ step(a,x0,z0,x1,z1){const c=collide(a,x1,z1,.45);let x=c[0],z=c[1];for(const n of NPCS){if(n.d.room!==a)continue;const dx=x-n.x,dz=z-n.z,d=Math.hypot(dx,dz);if(d<.75&&d>1e-4){x=n.x+dx/d*.75;z=n.z+dz/d*.75}}
+  const dp=Math.hypot(x-pl.x,z-pl.z);if(a===Eng.area&&dp<.8&&dp>1e-4){x=pl.x+(x-pl.x)/dp*.8;z=pl.z+(z-pl.z)/dp*.8}
+  if(!Achi.ok(a,x,z)||Math.hypot(x-x0,z-z0)<1e-4)return null;return[x,z]},
+ clear(a,x0,z0,x1,z1,skip=0){const L=Math.hypot(x1-x0,z1-z0),n=Math.ceil(L/.3);for(let i=1;i<=n;i++){if(L*(1-i/n)<skip)break;const x=x0+(x1-x0)*i/n,z=z0+(z1-z0)*i/n;if(!Achi.ok(a,x,z))return false}return true},
  ok(a,x,z){const c=collide(a,x,z,.45);if(Math.hypot(c[0]-x,c[1]-z)>.05)return false;const R=W.rooms[a];if(R&&R.bounds){const ox=R.ox||0;if(x<R.bounds.x0+ox||x>R.bounds.x1+ox||z<R.bounds.z0||z>R.bounds.z1)return false}return true},
  relocate(a,near){
   const L=ACHI_SPOTS[a];if(!L)return false;const s=Achi.s;let pick=null;
@@ -3771,11 +3782,11 @@ const Achi={obj:null,s:null,away:0,tip:null,
   if(Achi.busy){spd=s.animSpd||0}else{
   if(s.follow>0){s.follow-=dt;if(dp>1.8){s.tx=pl.x-Math.sin(pl.ry)*1.3;s.tz=pl.z-Math.cos(pl.ry)*1.3;s.mode='walk'}else if(s.mode==='walk'){s.mode='sit';s.timer=2}}
   if(s.mode==='walk'){const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz);spd=s.follow>0?(dp>4?4.2:2.4):1.1;
-   if(d<.15){s.mode='sit';s.timer=3+Math.random()*6}else{const nx=s.x+dx/d*spd*dt,nz=s.z+dz/d*spd*dt;if(Achi.ok(s.area,nx,nz)||s.follow>0){s.x=nx;s.z=nz;let r=Math.atan2(dx,dz)-s.ry;r=Math.atan2(Math.sin(r),Math.cos(r));s.ry+=r*Math.min(1,dt*6)}else{s.mode='sit';s.timer=2}}}
+   if(d<.15){s.mode='sit';s.timer=3+Math.random()*6}else{const tx0=s.x+dx/d*spd*dt,tz0=s.z+dz/d*spd*dt,c=Achi.step(s.area,s.x,s.z,tx0,tz0);if(c){s.x=c[0];s.z=c[1];let r=Math.atan2(dx,dz)-s.ry;r=Math.atan2(Math.sin(r),Math.cos(r));s.ry+=r*Math.min(1,dt*6)}else{s.mode='sit';s.timer=2}}}
   else{s.timer-=dt;
    if(s.mode==='sit'&&dp<3.5&&s.follow<=0){let r=Math.atan2(pl.x-s.x,pl.z-s.z)+(s.snub?PI*.6:0)-s.ry;r=Math.atan2(Math.sin(r),Math.cos(r));s.ry+=r*Math.min(1,dt*2)}
    if(s.timer<=0&&s.follow<=0){const r=Math.random();s.snub=Math.random()<.5;
-    if(r<.45){for(let k=0;k<8;k++){const an=Math.random()*TAU,rr=Math.random()*s.anchor.r,x=s.anchor.x+Math.cos(an)*rr,z=s.anchor.z+Math.sin(an)*rr;if(Achi.ok(s.area,x,z)){s.tx=x;s.tz=z;s.mode='walk';break}}if(s.mode!=='walk'){s.mode='sit';s.timer=4}}
+    if(r<.45){for(let k=0;k<8;k++){const an=Math.random()*TAU,rr=Math.random()*s.anchor.r,x=s.anchor.x+Math.cos(an)*rr,z=s.anchor.z+Math.sin(an)*rr;if(Achi.ok(s.area,x,z)&&Achi.clear(s.area,s.x,s.z,x,z)){s.tx=x;s.tz=z;s.mode='walk';break}}if(s.mode!=='walk'){s.mode='sit';s.timer=4}}
     else if(r<.75){s.mode='sleep';s.timer=25+Math.random()*30}else{s.mode='sit';s.timer=5+Math.random()*6}}}}
   // 偶爾自己喵一聲（傲嬌：你靠近的時候比較常）
   if(!Achi.busy&&s.mode!=='sleep'&&dp<5&&Math.random()<dt*.025){Snd.play(Math.random()<.5?'mew':'meow');Achi.mouth=.5;Achi.tip3(['喵～','……喵。','喵？','喵。'][(Math.random()*4)|0])}
@@ -3861,7 +3872,9 @@ const Achi={obj:null,s:null,away:0,tip:null,
   const s=Achi.s,a=P.achi,u=pl.obj.userData,o=Achi.obj.userData;Achi.anim=1;
   Dlg.say('阿奇',['阿奇忽然站起來，頭也不回地走掉了。'],null,null);await wait(900);Dlg.end&&Dlg.on&&Dlg.end();
   // 走開
-  const sx=s.x,sz=s.z;let ax=sx-(pl.x-sx)*2.2,az=sz-(pl.z-sz)*2.2;if(!Achi.ok(s.area,ax,az)){ax=sx+(pl.z-sz)*2.2;az=sz-(pl.x-sx)*2.2}
+  const sx=s.x,sz=s.z;let ax=sx,az=sz;
+  // 找一個走得過去的方向（路上不能有牆、桌椅），走不遠就走短一點
+  find:for(const L of[2.2,1.6,1]){const b0=Math.atan2(sx-pl.x,sz-pl.z);for(let k=0;k<12;k++){const an=b0+(k%2?1:-1)*Math.ceil(k/2)*PI/6,x=sx+Math.sin(an)*L,z=sz+Math.cos(an)*L;if(Math.hypot(x-pl.x,z-pl.z)>1.2&&Achi.clear(s.area,sx,sz,x,z)){ax=x;az=z;break find}}}
   const walk=(x0,z0,x1,z1,ms)=>{s.ry=Math.atan2(x1-x0,z1-z0);s.animSpd=1.4;return tw(ms,q=>{s.x=x0+(x1-x0)*q;s.z=z0+(z1-z0)*q}).then(()=>s.animSpd=0)};
   await walk(sx,sz,ax,az,1500);await wait(900);
   // 叼著髮箍回來
@@ -3887,7 +3900,10 @@ function catEarBand(){const g=new T.Group();const bd=new T.Mesh(new T.TorusGeome
 async function npcGiveFish(){
  if(Game.fishBusy||!Cafe.seat||Eng.area!=='hall')return;const a=Eng.area;
  const cand=NPCS.filter(n=>n.d.room===a&&!n.d.obj&&!n.d.static&&n.o.visible).sort((x,y)=>Math.hypot(x.x-pl.x,x.z-pl.z)-Math.hypot(y.x-pl.x,y.z-pl.z));
- const n=cand[0];if(!n)return;Game.fishBusy=1;n.busy=true;Eng.lock++;Eng.anims=(Eng.anims||0)+1;const ui=$('cafe');if(ui)ui.style.visibility='hidden';
+ // 找一個「走得到你旁邊、路上沒有桌椅擋著」的人，不會穿過東西
+ let n=null,tx=0,tz=0;const sd0=(Cafe.seat?Cafe.seat.ry:pl.ry)+PI/2;
+ pick:for(const c of cand.slice(0,4))for(const sg of[1,-1]){const x=pl.x+Math.sin(sd0)*1.05*sg,z=pl.z+Math.cos(sd0)*1.05*sg;if(Achi.clear(a,c.x,c.z,x,z,1.3)){n=c;tx=x;tz=z;break pick}}
+ if(!n)return;Game.fishBusy=1;n.busy=true;Eng.lock++;Eng.anims=(Eng.anims||0)+1;const ui=$('cafe');if(ui)ui.style.visibility='hidden';
  const x0=n.x,z0=n.z,ua=n.o.userData;let pk=null,locked=true;
  const unlock=()=>{if(locked){locked=false;Eng.lock=Math.max(0,Eng.lock-1)}};
  const done=()=>{ // 不管中間發生什麼事，最後一定把狀態還原
@@ -3896,7 +3912,6 @@ async function npcGiveFish(){
   n.x=x0;n.z=z0;n.spd=0;n.busy=false};
  const guard=setTimeout(done,20000);
  try{
-  const side=(Cafe.seat?Cafe.seat.ry:pl.ry)+PI/2,tx=pl.x+Math.sin(side)*1.05,tz=pl.z+Math.cos(side)*1.05;
   const go=(xa,za,xb,zb)=>{const d=Math.hypot(xb-xa,zb-za);n.ry=Math.atan2(xb-xa,zb-za);n.spd=1.8;return tw(Math.min(4000,Math.max(300,d/1.8*1000)),q=>{n.x=xa+(xb-xa)*q;n.z=za+(zb-za)*q}).then(()=>n.spd=0)};
   await go(x0,z0,tx,tz);n.ry=Math.atan2(pl.x-n.x,pl.z-n.z);
   {const fr=Cafe.seat?Cafe.seat.ry:pl.ry,mx=(n.x+pl.x)/2,mz=(n.z+pl.z)/2,y0=pl.y||0,cx=pl.x+Math.sin(fr)*2.6+(n.x-pl.x)*.5,cz=pl.z+Math.cos(fr)*2.6+(n.z-pl.z)*.5;
